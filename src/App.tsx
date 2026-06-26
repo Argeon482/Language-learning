@@ -5,7 +5,7 @@ import {
   HelpCircle, Keyboard, ArrowLeft, ArrowRight, Music, 
   AlertCircle, Headphones, Shuffle, Upload, Download, Film,
   Info, Sparkle, ExternalLink, CheckCircle2, Copy, Plus,
-  Trash2, FolderHeart
+  Trash2, FolderHeart, Languages, Settings
 } from 'lucide-react';
 import { SONG_DATA } from './data';
 import { Phrase, PhraseBreakdown, VocabTerm, SongData } from './types';
@@ -260,8 +260,229 @@ function sanitizeAndSortSongData(data: SongData, preserveExistingIds = false): S
   };
 }
 
+const UI_TRANSLATIONS: Record<string, Record<string, string>> = {
+  en: {
+    flashcards: 'Flashcards',
+    quiz: 'Quiz Challenge',
+    dictation: 'Spelling Arena',
+    vocab: 'Song Vocab',
+    lyrics: 'Full Lyrics',
+    change_import: 'Change / Import Song',
+    prev: 'Previous',
+    next: 'Next',
+    reveal_translation: 'Reveal Translation',
+    play_from_timestamp: 'Play from timestamp',
+    current_card_timestamp: 'Current Card Timestamp:',
+    trim_time: 'Trim Time',
+    reset_to_default: 'Reset to Default',
+    load_demo_song: 'Load Demo Song',
+    create_blank_song: 'Create New Blank Song',
+    song_customizer_title: 'Song Customizer & Loader',
+    song_library_title: 'Your Saved Song Library',
+    lyrics_instruction: "Click any lyric's Play button to sync and jump both the YouTube player and local player directly to that line's precise timestamp.",
+    back_card: 'Back Card',
+    front_card: 'Front Card',
+    check_answer: 'Check Answer',
+    typed_input_placeholder: 'Type what you hear (accents/punctuation optional)...',
+    submit_btn: 'Submit Answer',
+    correct: 'Correct!',
+    incorrect: 'Incorrect',
+    show_hint: 'Show Hint',
+    hide_hint: 'Hide Hint',
+    try_again: 'Try Again',
+    reveal_correct: 'Reveal Correct Answer',
+    next_phrase: 'Next Phrase',
+    settings: 'Settings',
+    language: 'App Language',
+    click_to_reveal: 'Click to reveal translation'
+  },
+  es: {
+    flashcards: 'Tarjetas',
+    quiz: 'Desafío de Quiz',
+    dictation: 'Arena de Deletreo',
+    vocab: 'Vocabulario',
+    lyrics: 'Letras Completas',
+    change_import: 'Cambiar / Importar Canción',
+    prev: 'Anterior',
+    next: 'Siguiente',
+    reveal_translation: 'Revelar Traducción',
+    play_from_timestamp: 'Reproducir desde tiempo',
+    current_card_timestamp: 'Marca de tiempo:',
+    trim_time: 'Ajustar Tiempo',
+    reset_to_default: 'Restablecer',
+    load_demo_song: 'Cargar Demostración',
+    create_blank_song: 'Crear Canción Vacía',
+    song_customizer_title: 'Personalizador de Canciones',
+    song_library_title: 'Tu Biblioteca de Canciones',
+    lyrics_instruction: 'Haz clic en el botón de reproducción de cualquier letra para sincronizar y saltar directamente al tiempo de esa línea.',
+    back_card: 'Reverso',
+    front_card: 'Frente',
+    check_answer: 'Verificar Respuesta',
+    typed_input_placeholder: 'Escribe lo que escuchas...',
+    submit_btn: 'Enviar Respuesta',
+    correct: '¡Correcto!',
+    incorrect: 'Incorrecto',
+    show_hint: 'Mostrar Pista',
+    hide_hint: 'Ocultar Pista',
+    try_again: 'Intentar de Nuevo',
+    reveal_correct: 'Revelar Respuesta Correcta',
+    next_phrase: 'Siguiente Frase',
+    settings: 'Configuración',
+    language: 'Idioma de la App',
+    click_to_reveal: 'Haz clic para revelar traducción'
+  },
+  fr: {
+    flashcards: 'Fiches',
+    quiz: 'Défi Quiz',
+    dictation: "Arène d'Épellation",
+    vocab: 'Vocabulaire',
+    lyrics: 'Paroles',
+    change_import: 'Changer / Importer',
+    prev: 'Précédent',
+    next: 'Suivant',
+    reveal_translation: 'Révéler la traduction',
+    play_from_timestamp: "Jouer depuis l'horodatage",
+    current_card_timestamp: 'Horodatage de la carte :',
+    trim_time: 'Ajuster le temps',
+    reset_to_default: 'Réinitialiser',
+    load_demo_song: 'Charger la démo',
+    create_blank_song: 'Créer une chanson vide',
+    song_customizer_title: 'Personnalisation de chanson',
+    song_library_title: 'Votre bibliothèque',
+    lyrics_instruction: "Cliquez sur Play pour synchroniser l'horodatage de cette ligne.",
+    back_card: 'Verso',
+    front_card: 'Recto',
+    check_answer: 'Vérifier la réponse',
+    typed_input_placeholder: 'Écrivez ce que vous entendez...',
+    submit_btn: 'Soumettre',
+    correct: 'Correct !',
+    incorrect: 'Incorrect',
+    show_hint: "Afficher l'indice",
+    hide_hint: "Masquer l'indice",
+    try_again: 'Réessayer',
+    reveal_correct: 'Afficher la bonne réponse',
+    next_phrase: 'Phrase suivante',
+    settings: 'Paramètres',
+    language: 'Langue de l\'app',
+    click_to_reveal: 'Cliquer pour révéler la traduction'
+  },
+  de: {
+    flashcards: 'Karteikarten',
+    quiz: 'Quiz-Herausforderung',
+    dictation: 'Rechtschreib-Arena',
+    vocab: 'Song-Vokabeln',
+    lyrics: 'Songtext',
+    change_import: 'Lied wechseln / importieren',
+    prev: 'Zurück',
+    next: 'Weiter',
+    reveal_translation: 'Übersetzung anzeigen',
+    play_from_timestamp: 'Ab Zeitstempel abspielen',
+    current_card_timestamp: 'Zeitstempel der Karte:',
+    trim_time: 'Zeit anpassen',
+    reset_to_default: 'Zurücksetzen',
+    load_demo_song: 'Demo-Lied laden',
+    create_blank_song: 'Leeres Lied erstellen',
+    song_customizer_title: 'Song-Customizer & Loader',
+    song_library_title: 'Deine Liederbibliothek',
+    lyrics_instruction: 'Klicke auf Abspielen, um mit dem genauen Zeitstempel dieser Zeile zu synchronisieren.',
+    back_card: 'Rückseite',
+    front_card: 'Vorderseite',
+    check_answer: 'Antwort prüfen',
+    typed_input_placeholder: 'Schreibe, was du hörst...',
+    submit_btn: 'Antwort einsenden',
+    correct: 'Richtig!',
+    incorrect: 'Falsch',
+    show_hint: 'Hinweis anzeigen',
+    hide_hint: 'Hinweis ausblenden',
+    try_again: 'Erneut versuchen',
+    reveal_correct: 'Richtige Antwort anzeigen',
+    next_phrase: 'Nächste Phrase',
+    settings: 'Einstellungen',
+    language: 'App-Sprache',
+    click_to_reveal: 'Klicken für Übersetzung'
+  },
+  it: {
+    flashcards: 'Carte',
+    quiz: 'Sfida Quiz',
+    dictation: 'Arena di Scrittura',
+    vocab: 'Vocabolario',
+    lyrics: 'Testo',
+    change_import: 'Cambia / Importa Canzone',
+    prev: 'Precedente',
+    next: 'Successivo',
+    reveal_translation: 'Rivela Traduzione',
+    play_from_timestamp: 'Riproduci da timestamp',
+    current_card_timestamp: 'Timestamp della carta:',
+    trim_time: 'Regola Tempo',
+    reset_to_default: 'Ripristina',
+    load_demo_song: 'Carica Canzone Demo',
+    create_blank_song: 'Crea Nuova Canzone Vuota',
+    song_customizer_title: 'Personalizzatore Canzoni',
+    song_library_title: 'La Tua Libreria Canzoni',
+    lyrics_instruction: 'Clicca su Play per saltare al timestamp preciso di questa riga.',
+    back_card: 'Retro',
+    front_card: 'Fronte',
+    check_answer: 'Verifica Risposta',
+    typed_input_placeholder: 'Scrivi quello che senti...',
+    submit_btn: 'Invia Risposta',
+    correct: 'Corretto!',
+    incorrect: 'Errato',
+    show_hint: 'Mostra Suggerimento',
+    hide_hint: 'Nascondi Suggerimento',
+    try_again: 'Riprova',
+    reveal_correct: 'Rivela Risposta Corretta',
+    next_phrase: 'Prossima Frase',
+    settings: 'Impostazioni',
+    language: 'Lingua App',
+    click_to_reveal: 'Clicca per rivelare la traduzione'
+  },
+  pt: {
+    flashcards: 'Cartões',
+    quiz: 'Desafio de Quiz',
+    dictation: 'Arena de Ortografia',
+    vocab: 'Vocabulário',
+    lyrics: 'Letras',
+    change_import: 'Alterar / Importar Música',
+    prev: 'Anterior',
+    next: 'Seguinte',
+    reveal_translation: 'Revelar Tradução',
+    play_from_timestamp: 'Reproduzir do timestamp',
+    current_card_timestamp: 'Timestamp do cartão:',
+    trim_time: 'Ajustar Tempo',
+    reset_to_default: 'Restaurar Padrão',
+    load_demo_song: 'Carregar Música Demo',
+    create_blank_song: 'Criar Nova Música Vazia',
+    song_customizer_title: 'Personalizador de Músicas',
+    song_library_title: 'Sua Biblioteca de Músicas Salvas',
+    lyrics_instruction: 'Clique no botão Play de qualquer letra para sincronizar e saltar para o timestamp dessa linha.',
+    back_card: 'Reverso',
+    front_card: 'Frente',
+    check_answer: 'Verificar Resposta',
+    typed_input_placeholder: 'Digite o que você ouve...',
+    submit_btn: 'Enviar Resposta',
+    correct: 'Correto!',
+    incorrect: 'Incorreto',
+    show_hint: 'Mostrar Dica',
+    hide_hint: 'Ocultar Dica',
+    try_again: 'Tentar Novamente',
+    reveal_correct: 'Revelar Resposta Correta',
+    next_phrase: 'Próxima Frase',
+    settings: 'Configurações',
+    language: 'Idioma do App',
+    click_to_reveal: 'Clique para revelar tradução'
+  }
+};
+
 export default function App() {
   // App view state
+  const [uiLang, setUiLang] = useState<string>(() => localStorage.getItem('app_button_language') || 'en');
+  
+  useEffect(() => {
+    localStorage.setItem('app_button_language', uiLang);
+  }, [uiLang]);
+
+  const t = (key: string) => UI_TRANSLATIONS[uiLang]?.[key] || UI_TRANSLATIONS['en']?.[key] || key;
+
   const [activeTab, setActiveTab] = useState<string>('flashcards'); // flashcards, quiz, dictation, vocab, lyrics
   const [currentDeck, setCurrentDeck] = useState<string>('All'); // All, Support, Struggle, Hope, Vulnerability, Starred
   const [starredIds, setStarredIds] = useState<number[]>([]);
@@ -762,7 +983,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
               <h1 id="app-title" className="text-xl sm:text-2xl font-bold tracking-tight text-white">
                 {songData.title} <span className="text-slate-500 font-normal ml-2">• {songData.artist}</span>
               </h1>
-              <div className="flex items-center gap-2.5 mt-0.5">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 mt-0.5">
                 <p className="text-xs text-teal-400/80 font-semibold tracking-wide uppercase">PHRASE STUDY COMPANION</p>
                 <span className="text-slate-800">•</span>
                 <button
@@ -771,8 +992,25 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                   className="text-xs text-indigo-450 hover:text-indigo-300 font-bold underline decoration-dotted underline-offset-2 flex items-center gap-1 cursor-pointer transition-colors"
                 >
                   <Music className="w-3 h-3" />
-                  <span>Change / Import Song</span>
+                  <span>{t('change_import')}</span>
                 </button>
+                <span className="text-slate-800">•</span>
+                <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                  <Languages className="w-3.5 h-3.5 text-teal-400" />
+                  <select
+                    id="ui-lang-select"
+                    value={uiLang}
+                    onChange={(e) => setUiLang(e.target.value)}
+                    className="bg-slate-900 text-slate-300 text-[11px] font-bold border border-slate-800 rounded-lg px-2 py-0.5 cursor-pointer hover:border-slate-700 hover:text-white transition focus:outline-none focus:ring-1 focus:ring-teal-500/40"
+                  >
+                    <option value="en">English 🇬🇧</option>
+                    <option value="es">Español 🇪🇸</option>
+                    <option value="fr">Français 🇫🇷</option>
+                    <option value="de">Deutsch 🇩🇪</option>
+                    <option value="it">Italiano 🇮🇹</option>
+                    <option value="pt">Português 🇵🇹</option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>
@@ -780,11 +1018,11 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
           {/* MAIN TABS NAVIGATION */}
           <nav className="flex gap-1 bg-slate-900 p-1.5 rounded-2xl border border-slate-800 overflow-x-auto max-w-full">
             {[
-              { id: 'flashcards', label: 'Flashcards', icon: BookOpen },
-              { id: 'quiz', label: 'Quiz Challenge', icon: HelpCircle },
-              { id: 'dictation', label: 'Spelling Arena', icon: Keyboard },
-              { id: 'vocab', label: 'Song Vocab', icon: Sparkle },
-              { id: 'lyrics', label: 'Full Lyrics', icon: Headphones },
+              { id: 'flashcards', label: t('flashcards'), icon: BookOpen },
+              { id: 'quiz', label: t('quiz'), icon: HelpCircle },
+              { id: 'dictation', label: t('dictation'), icon: Keyboard },
+              { id: 'vocab', label: t('vocab'), icon: Sparkle },
+              { id: 'lyrics', label: t('lyrics'), icon: Headphones },
             ].map((tab) => {
               const Icon = tab.icon;
               return (
@@ -821,7 +1059,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-800 pb-4 gap-3">
                 <div>
                   <h3 className="text-base font-bold text-teal-300 flex items-center gap-2">
-                    <Music className="w-5 h-5" /> Song Customizer & Loader
+                    <Music className="w-5 h-5" /> {t('song_customizer_title')}
                   </h3>
                   <p className="text-xs text-slate-400 mt-1">
                     Turn this application into an immersive study companion for any song in the world. Just fetch song metadata from Gemini and load it below!
@@ -839,7 +1077,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                     }}
                     className="bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 text-xs px-3 py-2 rounded-xl transition font-semibold flex items-center gap-1.5"
                   >
-                    <RotateCcw className="w-3.5 h-3.5" /> Reset to Default
+                    <RotateCcw className="w-3.5 h-3.5" /> {t('reset_to_default')}
                   </button>
                   <button
                     id="load-demo-song-btn"
@@ -849,7 +1087,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                     }}
                     className="bg-indigo-950/45 border border-indigo-900 text-indigo-300 text-xs px-3 py-2 rounded-xl hover:bg-indigo-950/80 transition font-semibold"
                   >
-                    Load Demo Song
+                    {t('load_demo_song')}
                   </button>
                 </div>
               </div>
@@ -859,7 +1097,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                   <div>
                     <h4 className="text-xs font-bold text-teal-400 uppercase tracking-widest flex items-center gap-2">
-                      <FolderHeart className="w-4.5 h-4.5 text-pink-500" /> Your Saved Song Library
+                      <FolderHeart className="w-4.5 h-4.5 text-pink-500" /> {t('song_library_title')}
                     </h4>
                     <p className="text-[11px] text-slate-400 mt-0.5">
                       Toggle between different songs you have imported. Any changes or timestamp trims you make are saved automatically to your local browser storage.
@@ -897,7 +1135,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                     }}
                     className="bg-slate-900 hover:bg-slate-850 text-slate-350 font-bold text-[10px] sm:text-xs px-3 py-2 rounded-xl border border-slate-800 transition flex items-center gap-1.5 cursor-pointer self-stretch sm:self-auto justify-center"
                   >
-                    <Plus className="w-3.5 h-3.5 text-teal-400" /> Create New Blank Song
+                    <Plus className="w-3.5 h-3.5 text-teal-400" /> {t('create_blank_song')}
                   </button>
                 </div>
 
@@ -1509,7 +1747,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                           </h2>
                           <div>
                             <span className="inline-block text-slate-500 text-[11px] uppercase tracking-widest font-semibold bg-slate-950/60 px-3 py-1 rounded-full border border-slate-900">
-                              Click to reveal translation
+                              {t('click_to_reveal')}
                             </span>
                           </div>
                         </div>
@@ -1524,9 +1762,9 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                             }}
                           >
                             <Music className="w-3.5 h-3.5 text-teal-400" />
-                            <span>Play from timestamp <strong>{activePhrase.timestampStr}</strong></span>
+                            <span>{t('play_from_timestamp')} <strong>{activePhrase.timestampStr}</strong></span>
                           </button>
-                          <span className="text-[10px] uppercase font-bold text-slate-600">Front Card</span>
+                          <span className="text-[10px] uppercase font-bold text-slate-600">{t('front_card')}</span>
                         </div>
                       </div>
 
@@ -1579,7 +1817,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
 
                         <div className="flex justify-between items-center border-t border-slate-800/60 pt-4 text-xs text-slate-500">
                           <span className="font-semibold text-slate-400">Song Section: {activePhrase.timestampStr}</span>
-                          <span className="text-[10px] uppercase font-bold text-slate-600">Back Card</span>
+                          <span className="text-[10px] uppercase font-bold text-slate-600">{t('back_card')}</span>
                         </div>
                       </div>
 
@@ -1591,11 +1829,11 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                     <div className="flex items-center gap-2">
                       <Music className="w-4 h-4 text-indigo-400" />
                       <span className="text-slate-300 font-medium">
-                        Current Card Timestamp: <strong className="text-indigo-300 font-mono text-sm">{activePhrase.timestampStr}</strong>
+                        {t('current_card_timestamp')} <strong className="text-indigo-300 font-mono text-sm">{activePhrase.timestampStr}</strong>
                       </span>
                     </div>
                     <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                      <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Trim Sync:</span>
+                      <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">{t('trim_time')}:</span>
                       <button
                         id="trim-minus-btn-fc"
                         onClick={(e) => {
@@ -1671,7 +1909,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                       onClick={handlePrevCard}
                       className="flex-1 bg-slate-900 border border-slate-800 py-3 rounded-xl text-sm font-semibold text-slate-300 hover:bg-slate-800 transition flex items-center justify-center gap-2"
                     >
-                      <ArrowLeft className="w-4 h-4" /> Previous
+                      <ArrowLeft className="w-4 h-4" /> {t('prev')}
                     </button>
                     <button
                       id="card-shuffle-btn"
@@ -1690,7 +1928,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                       onClick={handleNextCard}
                       className="flex-1 bg-gradient-to-r from-teal-500 to-indigo-600 py-3 rounded-xl text-sm font-bold text-white hover:opacity-95 transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/10"
                     >
-                      Next Phrase <ArrowRight className="w-4 h-4" />
+                      {t('next_phrase')} <ArrowRight className="w-4 h-4" />
                     </button>
                   </div>
 
@@ -1725,8 +1963,12 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                   {/* Score dashboard */}
                   <div className="flex justify-between items-center bg-slate-900 p-4 rounded-xl border border-slate-800">
                     <div className="space-y-0.5">
-                      <span className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Performance Score</span>
-                      <p className="text-lg font-bold text-teal-300 font-mono">{quizScore} / {quizTotal} Correct</p>
+                      <span className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">
+                        {uiLang === 'es' ? 'Puntuación de Rendimiento' : uiLang === 'fr' ? 'Score de performance' : uiLang === 'de' ? 'Leistungsbewertung' : uiLang === 'it' ? 'Punteggio Performance' : uiLang === 'pt' ? 'Pontuação de Desempenho' : 'Performance Score'}
+                      </span>
+                      <p className="text-lg font-bold text-teal-300 font-mono">
+                        {quizScore} / {quizTotal} {uiLang === 'es' ? 'Correctas' : uiLang === 'fr' ? 'Correctes' : uiLang === 'de' ? 'Richtig' : uiLang === 'it' ? 'Corrette' : uiLang === 'pt' ? 'Corretas' : 'Correct'}
+                      </p>
                     </div>
                     <button
                       id="reset-quiz-score"
@@ -1737,7 +1979,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                       }}
                       className="text-xs bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-slate-200 px-3 py-1.5 rounded-lg transition border border-slate-800 flex items-center gap-1.5"
                     >
-                      <RotateCcw className="w-3.5 h-3.5" /> Reset Stats
+                      <RotateCcw className="w-3.5 h-3.5" /> {uiLang === 'es' ? 'Restablecer Estadísticas' : uiLang === 'fr' ? 'Réinitialiser les stats' : uiLang === 'de' ? 'Statistiken zurücksetzen' : uiLang === 'it' ? 'Ripristina Statistiche' : uiLang === 'pt' ? 'Redefinir Estatísticas' : 'Reset Stats'}
                     </button>
                   </div>
 
@@ -1745,7 +1987,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                   <div className="bg-gradient-to-br from-slate-900 to-indigo-950/40 p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-xl space-y-6">
                     <div className="flex justify-between items-center">
                       <span className="text-[10px] bg-indigo-950 border border-indigo-900 px-3 py-1 rounded-full text-indigo-300 font-bold uppercase tracking-wider">
-                        Translate this lyric
+                        {uiLang === 'es' ? 'Traduce esta letra' : uiLang === 'fr' ? 'Traduisez cette parole' : uiLang === 'de' ? 'Übersetze diesen Songtext' : uiLang === 'it' ? 'Traduci questo testo' : uiLang === 'pt' ? 'Traduzir esta letra' : 'Translate this lyric'}
                       </span>
                       <button
                         id="quiz-listen-btn"
@@ -1764,7 +2006,9 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                       <h3 className="text-xl sm:text-2xl font-bold text-white leading-relaxed font-sans">
                         "{quizQuestion.spanish}"
                       </h3>
-                      <p className="text-xs text-slate-400 mt-2">Identify the correct English equivalent below:</p>
+                      <p className="text-xs text-slate-400 mt-2">
+                        {uiLang === 'es' ? 'Identifica el equivalente en inglés correcto abajo:' : uiLang === 'fr' ? 'Identifiez l\'équivalent anglais correct ci-dessous :' : uiLang === 'de' ? 'Identifiziere unten die richtige englische Entsprechung:' : uiLang === 'it' ? 'Identifica l\'equivalente inglese corretto sotto:' : uiLang === 'pt' ? 'Identifique o equivalente em inglês correto abaixo:' : 'Identify the correct English equivalent below:'}
+                      </p>
                     </div>
 
                     {/* Multiple-choice options */}
@@ -1808,10 +2052,10 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                         className="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-2 text-xs"
                       >
                         <div className="flex items-center gap-1 text-teal-400 font-bold uppercase tracking-wider text-[10px]">
-                          <Info className="w-3.5 h-3.5" /> Linguistic insights:
+                          <Info className="w-3.5 h-3.5" /> {uiLang === 'es' ? 'Información lingüística:' : uiLang === 'fr' ? 'Aperçus linguistiques :' : uiLang === 'de' ? 'Linguistische Einblicke:' : uiLang === 'it' ? 'Approfondimenti linguistici:' : uiLang === 'pt' ? 'Informações linguísticas:' : 'Linguistic insights:'}
                         </div>
                         <p className="text-slate-300 leading-relaxed">
-                          The literal equivalent of <strong className="text-teal-300">"{quizQuestion.spanish}"</strong> is: <br />
+                          {uiLang === 'es' ? 'El equivalente literal de' : uiLang === 'fr' ? 'L\'équivalent littéral de' : uiLang === 'de' ? 'Die wörtliche Entsprechung von' : uiLang === 'it' ? 'L\'equivalente letterale di' : uiLang === 'pt' ? 'O equivalente literal de' : 'The literal equivalent of'} <strong className="text-teal-300">"{quizQuestion.spanish}"</strong> {uiLang === 'es' ? 'es:' : uiLang === 'fr' ? 'est :' : uiLang === 'de' ? 'ist:' : uiLang === 'it' ? 'è:' : uiLang === 'pt' ? 'é:' : 'is:'} <br />
                           <span className="italic text-indigo-300">"{quizQuestion.literal}"</span>.
                         </p>
                         <div className="flex items-center justify-between pt-2 border-t border-slate-900 mt-2">
@@ -1820,14 +2064,14 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                             onClick={() => speakText(quizQuestion.spanish)}
                             className="text-slate-400 hover:text-slate-200 transition flex items-center gap-1"
                           >
-                            <Volume2 className="w-3.5 h-3.5" /> Pronounce
+                            <Volume2 className="w-3.5 h-3.5" /> {t('pronounce')}
                           </button>
                           <button
                             id="quiz-next-btn"
                             onClick={generateQuiz}
                             className="bg-teal-500 text-slate-950 font-bold px-4 py-1.5 rounded-lg hover:bg-teal-400 transition"
                           >
-                            Next Challenge
+                            {uiLang === 'es' ? 'Siguiente Desafío' : uiLang === 'fr' ? 'Défi suivant' : uiLang === 'de' ? 'Nächste Herausforderung' : uiLang === 'it' ? 'Prossima Sfida' : uiLang === 'pt' ? 'Próximo Desafio' : 'Next Challenge'}
                           </button>
                         </div>
                       </motion.div>
@@ -1846,13 +2090,19 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                   className="space-y-6"
                 >
                   <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 flex items-center justify-between text-xs">
-                    <span className="text-slate-400 font-semibold">Spelling Arena: Dictation</span>
-                    <span className="text-indigo-400 font-bold">Category: {activePhrase.category}</span>
+                    <span className="text-slate-400 font-semibold">
+                      {uiLang === 'es' ? 'Arena de Deletreo: Dictado' : uiLang === 'fr' ? 'Arène d\'Épellation : Dictée' : uiLang === 'de' ? 'Rechtschreib-Arena: Diktat' : uiLang === 'it' ? 'Arena di Scrittura: Dettato' : uiLang === 'pt' ? 'Arena de Ortografia: Ditado' : 'Spelling Arena: Dictation'}
+                    </span>
+                    <span className="text-indigo-400 font-bold">
+                      {uiLang === 'es' ? 'Categoría:' : uiLang === 'fr' ? 'Catégorie :' : uiLang === 'de' ? 'Kategorie:' : uiLang === 'it' ? 'Categoria:' : uiLang === 'pt' ? 'Categoria:' : 'Category:'} {activePhrase.category}
+                    </span>
                   </div>
 
                   <div className="bg-slate-900 border border-slate-800 p-6 sm:p-8 rounded-3xl space-y-6">
                     <div className="text-center space-y-4 py-3">
-                      <p className="text-xs text-slate-400 uppercase tracking-wider font-bold">Press play to listen to the phrase, then write it out correctly</p>
+                      <p className="text-xs text-slate-400 uppercase tracking-wider font-bold">
+                        {uiLang === 'es' ? 'Presiona reproducir para escuchar la frase, luego escríbela correctamente' : uiLang === 'fr' ? 'Appuyez sur lecture pour écouter la phrase, puis écrivez-la correctement' : uiLang === 'de' ? 'Drücke Wiedergabe, um die Phrase anzuhören, und schreibe sie dann richtig auf' : uiLang === 'it' ? 'Premi play per ascoltare la frase, quindi scrivila correttamente' : uiLang === 'pt' ? 'Pressione reproduzir para ouvir a frase, depois escreva-a corretamente' : 'Press play to listen to the phrase, then write it out correctly'}
+                      </p>
                       <button
                         id="dictation-play-audio"
                         onClick={() => speakText(activePhrase.spanish)}
@@ -1865,15 +2115,19 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                       >
                         <Volume2 className="w-8 h-8" />
                       </button>
-                      <p className="text-xs text-slate-500 italic">"Listen closely to vocal inflections, accents, and silent letters"</p>
+                      <p className="text-xs text-slate-500 italic">
+                        {uiLang === 'es' ? '"Escucha atentamente las inflexiones de voz, acentos y letras mudas"' : uiLang === 'fr' ? '"Écoutez attentivement les inflexions vocales, les accents et les lettres muettes"' : uiLang === 'de' ? '"Achte genau auf Stimmbeugungen, Akzente und stumme Buchstaben"' : uiLang === 'it' ? '"Ascolta attentamente le flessioni vocali, gli accenti e le lettere mute"' : uiLang === 'pt' ? '"Ouça com atenção as inflexões de voz, acentos e letras mudas"' : '"Listen closely to vocal inflections, accents, and silent letters"'}
+                      </p>
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-xs text-slate-400 font-bold uppercase tracking-wider">Type your Spanish spelling answer:</label>
+                      <label className="text-xs text-slate-400 font-bold uppercase tracking-wider">
+                        {uiLang === 'es' ? 'Escribe tu respuesta de ortografía:' : uiLang === 'fr' ? 'Tapez votre réponse d\'orthographe :' : uiLang === 'de' ? 'Gib deine Rechtschreibantwort ein:' : uiLang === 'it' ? 'Digita la tua risposta di ortografia:' : uiLang === 'pt' ? 'Digite sua resposta de ortografia:' : 'Type your spelling answer:'}
+                      </label>
                       <input
                         id="dictation-input"
                         type="text"
-                        placeholder="Escribe la frase aquí..."
+                        placeholder={uiLang === 'es' ? 'Escribe la frase aquí...' : uiLang === 'fr' ? 'Écrivez la phrase ici...' : uiLang === 'de' ? 'Schreibe den Satz hier...' : uiLang === 'it' ? 'Scrivi la frase qui...' : uiLang === 'pt' ? 'Escreva a frase aqui...' : 'Type the phrase here...'}
                         value={typedInput}
                         onChange={(e) => setTypedInput(e.target.value)}
                         disabled={dictationChecked}
@@ -1892,7 +2146,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                         onClick={() => setShowDictationHint(true)}
                         className="bg-slate-950 border border-slate-850 hover:bg-slate-900 text-slate-400 hover:text-slate-200 px-4 py-2.5 rounded-xl text-xs font-semibold transition"
                       >
-                        Get Letter Hint
+                        {uiLang === 'es' ? 'Obtener Pista de Letra' : uiLang === 'fr' ? 'Obtenir un indice' : uiLang === 'de' ? 'Buchstaben-Hinweis' : uiLang === 'it' ? 'Ottieni Suggerimento Lettere' : uiLang === 'pt' ? 'Obter Dica de Letra' : 'Get Letter Hint'}
                       </button>
                       
                       {!dictationChecked ? (
@@ -1902,7 +2156,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                           onClick={() => handleDictationCheck(activePhrase.spanish)}
                           className="flex-1 bg-gradient-to-r from-teal-500 to-indigo-600 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white hover:opacity-95 transition flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          Check Spelling
+                          {uiLang === 'es' ? 'Comprobar Ortografía' : uiLang === 'fr' ? 'Vérifier l\'orthographe' : uiLang === 'de' ? 'Rechtschreibung prüfen' : uiLang === 'it' ? 'Controlla Ortografia' : uiLang === 'pt' ? 'Verificar Ortografia' : 'Check Spelling'}
                         </button>
                       ) : (
                         <button
@@ -1910,7 +2164,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                           onClick={handleNextDictation}
                           className="flex-1 bg-teal-500 text-slate-950 py-2.5 rounded-xl text-xs sm:text-sm font-bold hover:bg-teal-400 transition"
                         >
-                          Next Dictation Phrase
+                          {uiLang === 'es' ? 'Siguiente Frase de Dictado' : uiLang === 'fr' ? 'Phrase de dictée suivante' : uiLang === 'de' ? 'Nächste Diktatphrase' : uiLang === 'it' ? 'Prossima Frase di Dettato' : uiLang === 'pt' ? 'Próxima Frase de Ditado' : 'Next Dictation Phrase'}
                         </button>
                       )}
                     </div>
@@ -1920,7 +2174,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                       <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-850 text-xs text-slate-400 flex items-center gap-2">
                         <Info className="w-4 h-4 text-indigo-400" />
                         <span>
-                          Starting letters hint: <strong className="text-slate-200 font-mono">
+                          {uiLang === 'es' ? 'Pista de letras iniciales:' : uiLang === 'fr' ? 'Indice des premières lettres :' : uiLang === 'de' ? 'Anfangsbuchstaben-Hinweis:' : uiLang === 'it' ? 'Suggerimento lettere iniziali:' : uiLang === 'pt' ? 'Dica de letras iniciais:' : 'Starting letters hint:'} <strong className="text-slate-200 font-mono">
                             {activePhrase.spanish.split(' ').map(word => word[0] + '_'.repeat(word.length - 1)).join(' ')}
                           </strong>
                         </span>
@@ -1941,23 +2195,23 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                           {dictationPassed ? (
                             <>
                               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                              <span>Perfect Spelling!</span>
+                              <span>{uiLang === 'es' ? '¡Ortografía Perfecta!' : uiLang === 'fr' ? 'Orthographe Parfaite !' : uiLang === 'de' ? 'Perfekte Rechtschreibung!' : uiLang === 'it' ? 'Ortografia Perfetta!' : uiLang === 'pt' ? 'Ortografia Perfeita!' : 'Perfect Spelling!'}</span>
                             </>
                           ) : (
                             <>
                               <AlertCircle className="w-4 h-4 text-rose-400" />
-                              <span>Spelling Correction Needed</span>
+                              <span>{uiLang === 'es' ? 'Se Requiere Corrección Ortográfica' : uiLang === 'fr' ? 'Correction d\'orthographe requise' : uiLang === 'de' ? 'Rechtschreibkorrektur erforderlich' : uiLang === 'it' ? 'Correzione Ortografica Necessaria' : uiLang === 'pt' ? 'Correção Ortográfica Necessária' : 'Spelling Correction Needed'}</span>
                             </>
                           )}
                         </div>
                         <p className="leading-relaxed">
-                          Your typing: <span className="font-mono bg-black/30 px-2 py-0.5 rounded text-slate-200">"{typedInput}"</span>
+                          {uiLang === 'es' ? 'Tu escritura:' : uiLang === 'fr' ? 'Votre texte :' : uiLang === 'de' ? 'Deine Eingabe:' : uiLang === 'it' ? 'La tua scrittura:' : uiLang === 'pt' ? 'Sua digitação:' : 'Your typing:'} <span className="font-mono bg-black/30 px-2 py-0.5 rounded text-slate-200">"{typedInput}"</span>
                         </p>
                         <p className="leading-relaxed">
-                          Correct: <span className="font-mono bg-black/30 px-2 py-0.5 rounded text-teal-200">"{activePhrase.spanish}"</span>
+                          {uiLang === 'es' ? 'Correcto:' : uiLang === 'fr' ? 'Correct :' : uiLang === 'de' ? 'Richtig:' : uiLang === 'it' ? 'Corretto:' : uiLang === 'pt' ? 'Correto:' : 'Correct:'} <span className="font-mono bg-black/30 px-2 py-0.5 rounded text-teal-200">"{activePhrase.spanish}"</span>
                         </p>
                         <div className="pt-2 border-t border-slate-900 text-xs text-slate-400">
-                          English Translation: <strong className="text-indigo-300">"{activePhrase.english}"</strong>
+                          {uiLang === 'es' ? 'Traducción al Inglés:' : uiLang === 'fr' ? 'Traduction en anglais :' : uiLang === 'de' ? 'Englische Übersetzung:' : uiLang === 'it' ? 'Traduzione Inglese:' : uiLang === 'pt' ? 'Tradução em Inglês:' : 'English Translation:'} <strong className="text-indigo-300">"{activePhrase.english}"</strong>
                         </div>
                       </motion.div>
                     )}
@@ -1976,7 +2230,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                       }}
                       className="flex-1 bg-slate-900 border border-slate-800 py-3 rounded-xl text-xs sm:text-sm font-semibold text-slate-300 hover:bg-slate-800 transition"
                     >
-                      Skip Back
+                      {uiLang === 'es' ? 'Omitir Atrás' : uiLang === 'fr' ? 'Sauter en arrière' : uiLang === 'de' ? 'Zurückspringen' : uiLang === 'it' ? 'Salta Indietro' : uiLang === 'pt' ? 'Pular para trás' : 'Skip Back'}
                     </button>
                     <button
                       id="dictation-skip-next"
@@ -1989,7 +2243,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                       }}
                       className="flex-1 bg-slate-900 border border-slate-800 py-3 rounded-xl text-xs sm:text-sm font-semibold text-slate-300 hover:bg-slate-800 transition"
                     >
-                      Skip Forward
+                      {uiLang === 'es' ? 'Omitir Adelante' : uiLang === 'fr' ? 'Sauter en avant' : uiLang === 'de' ? 'Vorspringen' : uiLang === 'it' ? 'Salta Avanti' : uiLang === 'pt' ? 'Pular para frente' : 'Skip Forward'}
                     </button>
                   </div>
                 </motion.div>
