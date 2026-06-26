@@ -521,8 +521,10 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
       videoPlayerRef.current.currentTime = seconds;
       videoPlayerRef.current.play().catch(e => console.log("Auto-play blocked or seeking complete.", e));
     } else {
-      // For YouTube, update the start query parameter of the iframe
-      setYtStart(seconds);
+      // For YouTube, update the start query parameter of the iframe.
+      // Must be a whole integer because YouTube's embed 'start' parameter only accepts integers!
+      // If we pass a float (e.g. 18.1), YouTube will reject it and fall back to 0 (beginning of song).
+      setYtStart(Math.floor(seconds));
     }
   };
 
@@ -709,6 +711,13 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
       localStorage.setItem('confieso_custom_song', JSON.stringify(updatedSong));
       return updatedSong;
     });
+
+    // Directly seek the media player to the new timestamp of the active phrase for instant feedback
+    const targetIdx = songData.phrases.findIndex(p => p.id === currentId);
+    if (targetIdx !== -1) {
+      const targetNewSec = Math.max(0, parseFloat((songData.phrases[targetIdx].timestamp + amount).toFixed(2)));
+      playAtTimestamp(targetNewSec);
+    }
   };
 
   const handleQuizAnswer = (optionId: number) => {
