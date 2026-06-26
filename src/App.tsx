@@ -660,30 +660,50 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
   const adjustActivePhraseTimestamp = (amount: number) => {
     if (!activePhrase) return;
     const currentId = activePhrase.id;
-    setSongData((prev) => {
-      const updatedPhrases = prev.phrases.map((p) => {
-        if (p.id === currentId) {
-          const newSec = Math.max(0, parseFloat((p.timestamp + amount).toFixed(2)));
-          const minutes = Math.floor(newSec / 60);
-          const seconds = Math.floor(newSec % 60);
-          const msFraction = Math.round((newSec % 1) * 10);
-          let newStr = `${minutes}:${String(seconds).padStart(2, '0')}`;
-          if (msFraction > 0) {
-            newStr += `.${msFraction}`;
-          }
-          return {
-            ...p,
-            timestamp: newSec,
-            timestampStr: newStr,
-          };
-        }
-        return p;
-      });
+    
+    const formatTime = (totalSecs: number) => {
+      const minutes = Math.floor(totalSecs / 60);
+      const seconds = Math.floor(totalSecs % 60);
+      const msFraction = Math.round((totalSecs % 1) * 10);
+      let str = `${minutes}:${String(seconds).padStart(2, '0')}`;
+      if (msFraction > 0) {
+        str += `.${msFraction}`;
+      }
+      return str;
+    };
 
-      const sortedPhrases = [...updatedPhrases].sort((a, b) => a.timestamp - b.timestamp);
+    setSongData((prev) => {
+      const idx = prev.phrases.findIndex(p => p.id === currentId);
+      if (idx === -1) return prev;
+
+      const updatedPhrases = prev.phrases.map((p) => ({ ...p }));
+      
+      const target = updatedPhrases[idx];
+      const targetNewSec = Math.max(0, parseFloat((target.timestamp + amount).toFixed(2)));
+      target.timestamp = targetNewSec;
+      target.timestampStr = formatTime(targetNewSec);
+
+      // Cascade forward to prevent overlap
+      for (let j = idx + 1; j < updatedPhrases.length; j++) {
+        if (updatedPhrases[j].timestamp < updatedPhrases[j-1].timestamp + 0.1) {
+          const nextNewSec = parseFloat((updatedPhrases[j-1].timestamp + 0.1).toFixed(2));
+          updatedPhrases[j].timestamp = nextNewSec;
+          updatedPhrases[j].timestampStr = formatTime(nextNewSec);
+        }
+      }
+
+      // Cascade backward to prevent overlap
+      for (let j = idx - 1; j >= 0; j--) {
+        if (updatedPhrases[j].timestamp > updatedPhrases[j+1].timestamp - 0.1) {
+          const prevNewSec = Math.max(0, parseFloat((updatedPhrases[j+1].timestamp - 0.1).toFixed(2)));
+          updatedPhrases[j].timestamp = prevNewSec;
+          updatedPhrases[j].timestampStr = formatTime(prevNewSec);
+        }
+      }
+
       const updatedSong = {
         ...prev,
-        phrases: sortedPhrases,
+        phrases: updatedPhrases,
       };
 
       localStorage.setItem('confieso_custom_song', JSON.stringify(updatedSong));
