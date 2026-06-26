@@ -771,7 +771,12 @@ export default function App() {
   const [validationSuccess, setValidationSuccess] = useState<boolean>(false);
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [copiedPrompt, setCopiedPrompt] = useState<boolean>(false);
-  const [selectedPromptType, setSelectedPromptType] = useState<'flash' | 'detailed' | 'parts' | 'resume'>('flash');
+  const [selectedPromptType, setSelectedPromptType] = useState<'flash' | 'detailed' | 'parts' | 'resume' | 'transcript'>('flash');
+
+  // Copilot custom fields
+  const [promptSongName, setPromptSongName] = useState<string>('');
+  const [promptYoutubeId, setPromptYoutubeId] = useState<string>('');
+  const [promptTranscript, setPromptTranscript] = useState<string>('');
 
   // Incremental chunk options
   const [resumeChunkSize, setResumeChunkSize] = useState<number>(10);
@@ -788,6 +793,67 @@ export default function App() {
 
   // Dynamic next-pass/resume prompt for Gemini to continue translating incrementally
   const activePromptText = useMemo(() => {
+    const targetSongName = promptSongName.trim() || `${songData.title} by ${songData.artist}`;
+    
+    // Extract youtube ID from URL if user pastes a full link
+    let targetYoutubeId = promptYoutubeId.trim() || songData.youtubeId;
+    if (targetYoutubeId.includes('youtube.com') || targetYoutubeId.includes('youtu.be')) {
+      try {
+        const urlObj = new URL(targetYoutubeId);
+        if (targetYoutubeId.includes('youtu.be')) {
+          targetYoutubeId = urlObj.pathname.substring(1);
+        } else {
+          targetYoutubeId = urlObj.searchParams.get('v') || targetYoutubeId;
+        }
+      } catch (e) {}
+    }
+
+    if (selectedPromptType === 'transcript') {
+      return `You will be provided with a raw YouTube transcript of a song (with timestamps).
+Your task is to convert this transcript into the complete bilingual study companion JSON dataset.
+
+CRITICAL INSTRUCTIONS:
+1. Use the provided transcript's timestamps, Spanish spelling, and phrase order EXACTLY.
+2. For EVERY line/phrase in the transcript, translate it and create a phrase card. Do NOT skip, summarize, or group lines unless necessary for natural translation.
+3. For each phrase, provide:
+   - "spanish": The original lyric line (from the transcript).
+   - "english": A natural, high-quality English translation.
+   - "literal": A literal word-for-word translation.
+   - "category": The song section (e.g., Verse, Chorus, Intro, Hook).
+   - "timestamp": The start time in total seconds (parsed from the transcript timestamp, e.g., 1:24 = 84).
+   - "timestampStr": The string timestamp format (e.g. "1:24" or "0:08").
+   - "breakdown": Limit to 1-2 of the most important/challenging words in that phrase with their English meaning.
+4. Extract a comprehensive vocabulary list of 12-15 core words/idioms from the song and list them in the "vocab" array.
+5. Output EXACTLY a single raw JSON object. Do NOT wrap it in markdown codeblocks (no \`\`\`json).
+
+Here is the exact schema structure required:
+{
+  "title": "${targetSongName.split(' by ')[0] || targetSongName}",
+  "artist": "${targetSongName.split(' by ')[1] || 'Artist'}",
+  "youtubeId": "${targetYoutubeId}",
+  "phrases": [
+    {
+      "id": 1,
+      "spanish": "Spanish phrase",
+      "english": "Natural English translation",
+      "literal": "Literal translation",
+      "category": "Chorus",
+      "timestamp": 12,
+      "timestampStr": "0:12",
+      "breakdown": [
+        { "word": "word", "meaning": "translation" }
+      ]
+    }
+  ],
+  "vocab": [
+    { "word": "word", "definition": "definition", "example": "sentence from song" }
+  ]
+}
+
+Here is the raw YouTube transcript to process:
+${promptTranscript.trim() || "(Please paste your raw YouTube transcript in the input field above to automatically include it here!)"}`;
+    }
+
     if (selectedPromptType === 'resume') {
       const lastPhrase = songData.phrases[songData.phrases.length - 1];
       const lastPhraseInfo = lastPhrase ? {
@@ -799,7 +865,7 @@ export default function App() {
         category: lastPhrase.category
       } : null;
 
-      return `We are compiling structured bilingual learning companion data for the song "${songData.title}" by "${songData.artist}" (YouTube Video ID: "${songData.youtubeId}").
+      return `We are compiling structured bilingual learning companion data for the song "${songData.title}" by "${songData.artist}" (YouTube Video ID: "${targetYoutubeId}").
 Because the song has many lyrics and to avoid token exhaustion or truncation, we are doing this incrementally in multiple rounds.
 
 We have already completed ${songData.phrases.length} phrases. Here is the last translated phrase of our current save state:
@@ -833,8 +899,21 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
   ]
 }`;
     }
-    return PROMPT_TEMPLATES[selectedPromptType];
-  }, [selectedPromptType, songData, startPhraseNum, endPhraseNum]);
+
+    // Replace the placeholders in pre-configured prompts with dynamic values entered by the user
+    const baseTemplate = PROMPT_TEMPLATES[selectedPromptType as 'flash' | 'detailed' | 'parts'];
+    let customTemplate = baseTemplate.replace(/\[INSERT SONG NAME AND ARTIST HERE\]/g, targetSongName);
+    
+    // Also inject youtube ID if specified
+    customTemplate = customTemplate.replace(/"youtubeId": "[^"]*"/, `"youtubeId": "${targetYoutubeId}"`);
+
+    // If a transcript is pasted but we are using another template, append it optionally
+    if (promptTranscript.trim() && selectedPromptType !== 'resume') {
+      customTemplate += `\n\nReference YouTube Transcript:\n${promptTranscript.trim()}`;
+    }
+
+    return customTemplate;
+  }, [selectedPromptType, songData, startPhraseNum, endPhraseNum, promptSongName, promptYoutubeId, promptTranscript]);
 
   // Flashcard states
   const [cardIndex, setCardIndex] = useState<number>(0);
@@ -1597,6 +1676,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                       {[
                         { id: 'flash', label: 'Flash/Lite Optimized', desc: 'Truncation prevention' },
                         { id: 'detailed', label: 'Detailed (Pro)', desc: 'Max details' },
+                        { id: 'transcript', label: 'Transcript-Guided (New)', desc: 'Use raw YouTube transcript with timestamps' },
                         { id: 'parts', label: 'Part 1 (Long Song)', desc: 'Generate first half' },
                         { id: 'resume', label: 'Incremental Pass (Resume)', desc: 'Generate next chunk based on last card' }
                       ].map(type => (
@@ -1614,6 +1694,49 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                           {type.label}
                         </button>
                       ))}
+                    </div>
+
+                    {/* Metadata & Transcript inputs */}
+                    <div className="bg-slate-900/40 p-3 rounded-xl border border-slate-850/60 space-y-3">
+                      <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1">
+                        <Sparkle className="w-3.5 h-3.5" /> Prompt Customizer Inputs
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div>
+                          <label className="text-[10px] text-slate-400 block mb-1">Song Name & Artist:</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. La Camisa Negra by Juanes"
+                            value={promptSongName}
+                            onChange={(e) => setPromptSongName(e.target.value)}
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-[11px] text-slate-200 focus:border-indigo-500 outline-none placeholder:text-slate-600"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-slate-400 block mb-1">YouTube Link or ID:</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. kRt2sRyup6A"
+                            value={promptYoutubeId}
+                            onChange={(e) => setPromptYoutubeId(e.target.value)}
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-[11px] text-slate-200 focus:border-indigo-500 outline-none placeholder:text-slate-600"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <label className="text-[10px] text-slate-400 block">Paste YouTube Transcript (with Timestamps):</label>
+                          {selectedPromptType === 'transcript' && (
+                            <span className="text-[9px] text-teal-400 font-bold animate-pulse">Required for Transcript-Guided tab</span>
+                          )}
+                        </div>
+                        <textarea
+                          placeholder="e.g.&#10;0:01 [Music]&#10;0:12 Tengo la camisa negra&#10;0:16 Hoy mi amor está de luto"
+                          value={promptTranscript}
+                          onChange={(e) => setPromptTranscript(e.target.value)}
+                          className="w-full h-20 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] font-mono text-slate-300 focus:border-indigo-500 outline-none placeholder:text-slate-600 resize-none"
+                        />
+                      </div>
                     </div>
 
                     {selectedPromptType === 'resume' && (
