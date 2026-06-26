@@ -1224,87 +1224,170 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
       
       {/* HEADER SECTION */}
       <header className={`relative border-b border-slate-900 bg-[#020617]/85 px-4 sticky top-0 z-50 backdrop-blur-md transition-all duration-300 ${showHeaderDetails ? 'py-4' : 'py-2 sm:py-2.5'}`}>
-        <div className={`max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between transition-all duration-300 ${showHeaderDetails ? 'gap-4' : 'gap-1'}`}>
+        <div className={`max-w-7xl mx-auto flex flex-col ${showHeaderDetails ? 'gap-4' : 'gap-0'} transition-all duration-300`}>
           
+          {/* TOP ROW: Title details & Navigation tabs */}
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-4 w-full">
+            <AnimatePresence initial={false}>
+              {showHeaderDetails && (
+                <motion.div
+                  initial={{ height: 'auto', opacity: 1, marginBottom: 0 }}
+                  animate={{ height: 'auto', opacity: 1, marginBottom: 0 }}
+                  exit={{ height: 0, opacity: 0, marginBottom: -12 }}
+                  transition={{ duration: 0.25, ease: 'easeInOut' }}
+                  className="overflow-hidden w-full lg:w-auto"
+                >
+                  <div className="flex items-center gap-4 w-full lg:w-auto pb-1">
+                    <div className="w-12 h-12 bg-teal-500/20 rounded-xl flex items-center justify-center border border-teal-500/30 flex-shrink-0">
+                      <Music className="w-6 h-6 text-teal-400" />
+                    </div>
+                    <div>
+                      <h1 id="app-title" className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+                        {songData.title} <span className="text-slate-500 font-normal ml-2">• {songData.artist}</span>
+                      </h1>
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 mt-0.5">
+                        <p className="text-xs text-teal-400/80 font-semibold tracking-wide uppercase">PHRASE STUDY COMPANION</p>
+                        <span className="text-slate-800">•</span>
+                        <button
+                          id="song-manager-toggle-btn"
+                          onClick={() => setShowSongManager(!showSongManager)}
+                          className="text-xs text-indigo-400 hover:text-indigo-300 font-bold underline decoration-dotted underline-offset-2 flex items-center gap-1 cursor-pointer transition-colors"
+                        >
+                          <Music className="w-3 h-3" />
+                          <span>{t('change_import')}</span>
+                        </button>
+                        <span className="text-slate-800">•</span>
+                        <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                          <Languages className="w-3.5 h-3.5 text-teal-400" />
+                          <select
+                            id="ui-lang-select"
+                            value={uiLang}
+                            onChange={(e) => setUiLang(e.target.value)}
+                            className="bg-slate-900 text-slate-300 text-[11px] font-bold border border-slate-800 rounded-lg px-2 py-0.5 cursor-pointer hover:border-slate-700 hover:text-white transition focus:outline-none focus:ring-1 focus:ring-teal-500/40"
+                          >
+                            <option value="en">English 🇬🇧</option>
+                            <option value="es">Español 🇪🇸</option>
+                            <option value="fr">Français 🇫🇷</option>
+                            <option value="de">Deutsch 🇩🇪</option>
+                            <option value="it">Italiano 🇮🇹</option>
+                            <option value="pt">Português 🇵🇹</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* MAIN TABS NAVIGATION */}
+            <nav className="flex gap-1 bg-slate-900 p-1.5 rounded-2xl border border-slate-800 overflow-x-auto max-w-full">
+              {[
+                { id: 'flashcards', label: t('flashcards'), icon: BookOpen },
+                { id: 'quiz', label: t('quiz'), icon: HelpCircle },
+                { id: 'dictation', label: t('dictation'), icon: Keyboard },
+                { id: 'vocab', label: t('vocab'), icon: Sparkle },
+                { id: 'lyrics', label: t('lyrics'), icon: Headphones },
+              ].map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    id={`tab-btn-${tab.id}`}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 whitespace-nowrap ${
+                      activeTab === tab.id
+                        ? 'bg-teal-500/20 text-white border border-teal-500/30 shadow-md'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+
+          {/* BOTTOM ROW: Cooperative Language Swap Hub (Collapsible on scroll) */}
           <AnimatePresence initial={false}>
             {showHeaderDetails && (
               <motion.div
-                initial={{ height: 'auto', opacity: 1, marginBottom: 0 }}
-                animate={{ height: 'auto', opacity: 1, marginBottom: 0 }}
-                exit={{ height: 0, opacity: 0, marginBottom: -12 }}
+                initial={{ height: 0, opacity: 0, marginTop: -8 }}
+                animate={{ height: 'auto', opacity: 1, marginTop: 0 }}
+                exit={{ height: 0, opacity: 0, marginTop: -8 }}
                 transition={{ duration: 0.25, ease: 'easeInOut' }}
-                className="overflow-hidden w-full lg:w-auto"
+                className="overflow-hidden w-full border-t border-slate-900 pt-3"
               >
-                <div className="flex items-center gap-4 w-full lg:w-auto pb-1">
-                  <div className="w-12 h-12 bg-teal-500/20 rounded-xl flex items-center justify-center border border-teal-500/30 flex-shrink-0">
-                    <Music className="w-6 h-6 text-teal-400" />
-                  </div>
-                  <div>
-                    <h1 id="app-title" className="text-xl sm:text-2xl font-bold tracking-tight text-white">
-                      {songData.title} <span className="text-slate-500 font-normal ml-2">• {songData.artist}</span>
-                    </h1>
-                    <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 mt-0.5">
-                      <p className="text-xs text-teal-400/80 font-semibold tracking-wide uppercase">PHRASE STUDY COMPANION</p>
-                      <span className="text-slate-800">•</span>
-                      <button
-                        id="song-manager-toggle-btn"
-                        onClick={() => setShowSongManager(!showSongManager)}
-                        className="text-xs text-indigo-400 hover:text-indigo-300 font-bold underline decoration-dotted underline-offset-2 flex items-center gap-1 cursor-pointer transition-colors"
-                      >
-                        <Music className="w-3 h-3" />
-                        <span>{t('change_import')}</span>
-                      </button>
-                      <span className="text-slate-800">•</span>
-                      <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                        <Languages className="w-3.5 h-3.5 text-teal-400" />
-                        <select
-                          id="ui-lang-select"
-                          value={uiLang}
-                          onChange={(e) => setUiLang(e.target.value)}
-                          className="bg-slate-900 text-slate-300 text-[11px] font-bold border border-slate-800 rounded-lg px-2 py-0.5 cursor-pointer hover:border-slate-700 hover:text-white transition focus:outline-none focus:ring-1 focus:ring-teal-500/40"
-                        >
-                          <option value="en">English 🇬🇧</option>
-                          <option value="es">Español 🇪🇸</option>
-                          <option value="fr">Français 🇫🇷</option>
-                          <option value="de">Deutsch 🇩🇪</option>
-                          <option value="it">Italiano 🇮🇹</option>
-                          <option value="pt">Português 🇵🇹</option>
-                        </select>
-                      </div>
+                <div className="bg-gradient-to-r from-slate-900 via-indigo-950/10 to-slate-900 border border-slate-800/60 p-3 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-1.5 bg-teal-500/10 text-teal-400 rounded-lg border border-teal-500/20">
+                      <Users className="w-4.5 h-4.5" />
                     </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-100 flex flex-wrap items-center gap-2">
+                        <span>Cooperative Language Swap Hub</span>
+                        <span className="text-[9px] text-teal-300 font-mono bg-teal-500/10 px-1 py-0.5 rounded border border-teal-500/20">2-PLAYER</span>
+                        {cloudSyncStatus === 'synced' && (
+                          <span className="text-[9px] text-emerald-400 font-mono bg-emerald-500/10 px-1 py-0.5 rounded border border-emerald-500/20 flex items-center gap-1">
+                            <Cloud className="w-2.5 h-2.5 text-emerald-400" />
+                            <span>Cloud Synced</span>
+                          </span>
+                        )}
+                        {cloudSyncStatus === 'syncing' && (
+                          <span className="text-[9px] text-cyan-400 font-mono bg-cyan-500/10 px-1 py-0.5 rounded border border-cyan-500/20 flex items-center gap-1 animate-pulse">
+                            <CloudLightning className="w-2.5 h-2.5 text-cyan-400 animate-bounce" />
+                            <span>Syncing...</span>
+                          </span>
+                        )}
+                        {cloudSyncStatus === 'error' && (
+                          <span className="text-[9px] text-rose-400 font-mono bg-rose-500/10 px-1 py-0.5 rounded border border-rose-500/20 flex items-center gap-1">
+                            <CloudOff className="w-2.5 h-2.5 text-rose-400" />
+                            <span>Sync Offline</span>
+                          </span>
+                        )}
+                      </h4>
+                      <p className="text-[11px] text-slate-400">Andrew is learning Spanish 🇪🇸 & Friend is learning English 🇺🇸. Tap roles to toggle active interfaces!</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded-lg border border-slate-850/80">
+                    <button
+                      id="role-btn-spanish-learner"
+                      onClick={() => {
+                        setStudyRole('spanish-learner');
+                        localStorage.setItem('buddy_study_role', 'spanish-learner');
+                      }}
+                      className={`px-3 py-1.5 rounded-md text-[11px] font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                        studyRole === 'spanish-learner'
+                          ? 'bg-teal-500 text-slate-950 font-black shadow-md shadow-teal-500/10'
+                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
+                      }`}
+                    >
+                      <span className="text-xs">🇺🇸</span>
+                      <span>Andrew (Spanish Learner)</span>
+                    </button>
+                    
+                    <button
+                      id="role-btn-english-learner"
+                      onClick={() => {
+                        setStudyRole('english-learner');
+                        localStorage.setItem('buddy_study_role', 'english-learner');
+                      }}
+                      className={`px-3 py-1.5 rounded-md text-[11px] font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                        studyRole === 'english-learner'
+                          ? 'bg-indigo-600 text-white font-black shadow-md shadow-indigo-600/20'
+                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
+                      }`}
+                    >
+                      <span className="text-xs">🇪🇸</span>
+                      <span>Friend (English Learner)</span>
+                    </button>
                   </div>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
-
-          {/* MAIN TABS NAVIGATION */}
-          <nav className="flex gap-1 bg-slate-900 p-1.5 rounded-2xl border border-slate-800 overflow-x-auto max-w-full">
-            {[
-              { id: 'flashcards', label: t('flashcards'), icon: BookOpen },
-              { id: 'quiz', label: t('quiz'), icon: HelpCircle },
-              { id: 'dictation', label: t('dictation'), icon: Keyboard },
-              { id: 'vocab', label: t('vocab'), icon: Sparkle },
-              { id: 'lyrics', label: t('lyrics'), icon: Headphones },
-            ].map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  id={`tab-btn-${tab.id}`}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 whitespace-nowrap ${
-                    activeTab === tab.id
-                      ? 'bg-teal-500/20 text-white border border-teal-500/30 shadow-md'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
-          </nav>
         </div>
       </header>
 
@@ -1863,75 +1946,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
         )}
       </AnimatePresence>
 
-      {/* BUDDY LANGUAGE SWAP CONTROL BAR */}
-      <div className="max-w-7xl w-full mx-auto px-4 pt-4 pb-0">
-        <div className="bg-gradient-to-r from-slate-900 via-indigo-950/20 to-slate-900 border border-slate-800/80 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-teal-500/10 text-teal-400 rounded-xl border border-teal-500/20">
-              <Users className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-slate-100 flex flex-wrap items-center gap-2">
-                <span>Cooperative Language Swap Hub</span>
-                <span className="text-[10px] text-teal-300 font-mono bg-teal-500/10 px-1.5 py-0.5 rounded border border-teal-500/20">2-PLAYER</span>
-                {cloudSyncStatus === 'synced' && (
-                  <span className="text-[10px] text-emerald-400 font-mono bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 flex items-center gap-1">
-                    <Cloud className="w-3 h-3 text-emerald-400" />
-                    <span>Cloud Synced</span>
-                  </span>
-                )}
-                {cloudSyncStatus === 'syncing' && (
-                  <span className="text-[10px] text-cyan-400 font-mono bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20 flex items-center gap-1 animate-pulse">
-                    <CloudLightning className="w-3 h-3 text-cyan-400 animate-bounce" />
-                    <span>Syncing...</span>
-                  </span>
-                )}
-                {cloudSyncStatus === 'error' && (
-                  <span className="text-[10px] text-rose-400 font-mono bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20 flex items-center gap-1">
-                    <CloudOff className="w-3 h-3 text-rose-400" />
-                    <span>Sync Offline</span>
-                  </span>
-                )}
-              </h4>
-              <p className="text-xs text-slate-400">Andrew is learning Spanish 🇪🇸 & Friend is learning English 🇺🇸. Tap roles below to toggle active interfaces!</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-slate-850/80">
-            <button
-              id="role-btn-spanish-learner"
-              onClick={() => {
-                setStudyRole('spanish-learner');
-                localStorage.setItem('buddy_study_role', 'spanish-learner');
-              }}
-              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
-                studyRole === 'spanish-learner'
-                  ? 'bg-teal-500 text-slate-950 font-black shadow-lg shadow-teal-500/10'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
-              }`}
-            >
-              <span className="text-sm">🇺🇸</span>
-              <span>Andrew (Spanish Learner)</span>
-            </button>
-            
-            <button
-              id="role-btn-english-learner"
-              onClick={() => {
-                setStudyRole('english-learner');
-                localStorage.setItem('buddy_study_role', 'english-learner');
-              }}
-              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
-                studyRole === 'english-learner'
-                  ? 'bg-indigo-600 text-white font-black shadow-lg shadow-indigo-600/20'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
-              }`}
-            >
-              <span className="text-sm">🇪🇸</span>
-              <span>Friend (English Learner)</span>
-            </button>
-          </div>
-        </div>
-      </div>
+
 
       {/* CORE GRID CONTENT LAYOUT */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
