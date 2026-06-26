@@ -401,6 +401,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
   const [localFileName, setLocalFileName] = useState<string>('');
   const [mediaPlayerType, setMediaPlayerType] = useState<'youtube' | 'local'>('youtube');
   const [ytStart, setYtStart] = useState<number>(11);
+  const [ytTrigger, setYtTrigger] = useState<number>(0);
   const [dragActive, setDragActive] = useState<boolean>(false);
   const videoPlayerRef = useRef<HTMLVideoElement>(null);
 
@@ -525,6 +526,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
       // Must be a whole integer because YouTube's embed 'start' parameter only accepts integers!
       // If we pass a float (e.g. 18.1), YouTube will reject it and fall back to 0 (beginning of song).
       setYtStart(Math.floor(seconds));
+      setYtTrigger(prev => prev + 1);
     }
   };
 
@@ -1442,7 +1444,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                   <div 
                     id="flashcard-container"
                     onClick={handleCardFlip}
-                    className="relative h-72 w-full cursor-pointer group"
+                    className="relative h-[22rem] sm:h-[25rem] w-full cursor-pointer group"
                     style={{ perspective: '1000px' }}
                   >
                     <div 
@@ -1495,26 +1497,34 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                           </div>
                         </div>
 
-                        <div className="text-center py-4">
-                          <h2 className="serif-display text-2xl sm:text-4xl font-medium text-white mb-6 leading-relaxed italic px-2">
+                        <div className="text-center py-4 flex-1 flex flex-col justify-center">
+                          <h2 className={`serif-display font-medium text-white mb-6 leading-relaxed italic px-2 transition-all ${
+                            activePhrase.spanish.length > 80 
+                              ? 'text-lg sm:text-2xl' 
+                              : activePhrase.spanish.length > 50 
+                                ? 'text-xl sm:text-3xl' 
+                                : 'text-2xl sm:text-4xl'
+                          }`}>
                             "{activePhrase.spanish}"
                           </h2>
-                          <span className="inline-block text-slate-500 text-[11px] mt-4 uppercase tracking-widest font-semibold bg-slate-950/60 px-3 py-1 rounded-full border border-slate-900">
-                            Click to reveal translation
-                          </span>
+                          <div>
+                            <span className="inline-block text-slate-500 text-[11px] uppercase tracking-widest font-semibold bg-slate-950/60 px-3 py-1 rounded-full border border-slate-900">
+                              Click to reveal translation
+                            </span>
+                          </div>
                         </div>
 
                         <div className="flex items-center justify-between border-t border-slate-800/60 pt-4 text-xs text-slate-400">
                           <button 
                             id="jump-time-btn"
-                            className="flex items-center gap-1.5 hover:text-teal-300 transition text-slate-400 text-[11px]" 
+                            className="flex items-center gap-2 hover:text-teal-300 transition text-slate-300 text-xs bg-slate-950/80 px-3 py-1.5 rounded-xl border border-slate-800 hover:border-teal-500/30" 
                             onClick={(e) => {
                               e.stopPropagation();
                               playAtTimestamp(activePhrase.timestamp);
                             }}
                           >
                             <Music className="w-3.5 h-3.5 text-teal-400" />
-                            <span>Jump to timestamp <strong>{activePhrase.timestampStr}</strong></span>
+                            <span>Play from timestamp <strong>{activePhrase.timestampStr}</strong></span>
                           </button>
                           <span className="text-[10px] uppercase font-bold text-slate-600">Front Card</span>
                         </div>
@@ -1549,13 +1559,21 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                           </button>
                         </div>
 
-                        <div className="text-center py-2 space-y-4">
-                          <p className="text-teal-300 font-semibold text-lg sm:text-xl uppercase tracking-tight leading-snug">
+                        <div className="text-center py-2 space-y-4 flex-1 flex flex-col justify-center">
+                          <p className={`text-teal-300 font-semibold uppercase tracking-tight leading-snug transition-all ${
+                            activePhrase.english.length > 80 
+                              ? 'text-xs sm:text-sm' 
+                              : activePhrase.english.length > 50 
+                                ? 'text-sm sm:text-lg' 
+                                : 'text-lg sm:text-xl'
+                          }`}>
                             "{activePhrase.english}"
                           </p>
-                          <div className="bg-slate-950/80 px-4 py-2.5 rounded-xl text-slate-400 italic max-w-md mx-auto border border-slate-850 text-left">
+                          <div className="bg-slate-950/80 px-4 py-2.5 rounded-xl text-slate-400 italic max-w-md w-full mx-auto border border-slate-850 text-left">
                             <span className="block text-[9px] uppercase font-bold text-slate-500 tracking-widest mb-0.5">Literal Word-for-Word Equivalent</span>
-                            <span className="text-xs text-slate-300">"{activePhrase.literal}"</span>
+                            <span className={`text-slate-300 block leading-relaxed ${
+                              activePhrase.literal.length > 80 ? 'text-[11px]' : 'text-xs'
+                            }`}>"{activePhrase.literal}"</span>
                           </div>
                         </div>
 
@@ -2169,7 +2187,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                 <div className="relative aspect-video rounded-2xl overflow-hidden bg-black border border-slate-950 shadow-inner">
                   <iframe
                     id="youtube-player-frame"
-                    key={`yt-player-${ytStart}`}
+                    key={`yt-player-${ytStart}-${ytTrigger}`}
                     src={`https://www.youtube.com/embed/${songData.youtubeId}?start=${ytStart}&autoplay=1&rel=0`}
                     title={`${songData.title} YouTube Video`}
                     className="absolute inset-0 w-full h-full border-0"
