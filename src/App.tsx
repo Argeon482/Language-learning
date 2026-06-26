@@ -9,88 +9,6 @@ import {
 import { SONG_DATA } from './data';
 import { Phrase, PhraseBreakdown, VocabTerm, SongData } from './types';
 
-// SAMPLE_SONG data structure for quick demo load
-const SAMPLE_SONG: SongData = {
-  title: "La Camisa Negra",
-  artist: "Juanes",
-  youtubeId: "kRt2sRyup6A",
-  phrases: [
-    {
-      id: 1,
-      spanish: "Tengo la camisa negra",
-      english: "I have the black shirt",
-      literal: "I have the shirt black",
-      category: "Chorus",
-      timestamp: 12,
-      timestampStr: "0:12",
-      breakdown: [
-        { word: "Tengo", meaning: "I have" },
-        { word: "la camisa", meaning: "the shirt" },
-        { word: "negra", meaning: "black" }
-      ]
-    },
-    {
-      id: 2,
-      spanish: "Hoy mi amor está de luto",
-      english: "Today my love is in mourning",
-      literal: "Today my love is of mourning",
-      category: "Chorus",
-      timestamp: 16,
-      timestampStr: "0:16",
-      breakdown: [
-        { word: "Hoy", meaning: "Today" },
-        { word: "mi amor", meaning: "my love" },
-        { word: "está de luto", meaning: "is in mourning" }
-      ]
-    },
-    {
-      id: 3,
-      spanish: "Por eso tengo la camisa negra",
-      english: "That's why I have the black shirt",
-      literal: "For that I have the shirt black",
-      category: "Chorus",
-      timestamp: 21,
-      timestampStr: "0:21",
-      breakdown: [
-        { word: "Por eso", meaning: "That's why / Because of that" },
-        { word: "tengo", meaning: "I have" },
-        { word: "la camisa negra", meaning: "the black shirt" }
-      ]
-    },
-    {
-      id: 4,
-      spanish: "Y un dolor que me perturba",
-      english: "And a pain that disturbs me",
-      literal: "And a pain that me disturbs",
-      category: "Verse 1",
-      timestamp: 25,
-      timestampStr: "0:25",
-      breakdown: [
-        { word: "dolor", meaning: "pain" },
-        { word: "que", meaning: "that / which" },
-        { word: "me perturba", meaning: "disturbs me" }
-      ]
-    }
-  ],
-  vocab: [
-    {
-      word: "camisa",
-      definition: "shirt",
-      example: "Tengo la camisa negra."
-    },
-    {
-      word: "luto",
-      definition: "mourning",
-      example: "Mi amor está de luto."
-    },
-    {
-      word: "dolor",
-      definition: "pain / grief",
-      example: "Y un dolor que me perturba."
-    }
-  ]
-};
-
 // PROMPT TEMPLATES dictionary for seamless external generation
 const PROMPT_TEMPLATES = {
   flash: `Retrieve the FULL, complete lyrics, English translations, selective breakdowns, and timestamps for a song.
@@ -779,7 +697,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                   <button
                     id="load-demo-song-btn"
                     onClick={() => {
-                      setSongInputJson(JSON.stringify(SAMPLE_SONG, null, 2));
+                      setSongInputJson(JSON.stringify(SONG_DATA, null, 2));
                       setValidationError(null);
                     }}
                     className="bg-indigo-950/45 border border-indigo-900 text-indigo-300 text-xs px-3 py-2 rounded-xl hover:bg-indigo-950/80 transition font-semibold"
