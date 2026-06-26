@@ -4,7 +4,8 @@ import {
   Play, RotateCcw, Volume2, Star, Check, X, BookOpen, 
   HelpCircle, Keyboard, ArrowLeft, ArrowRight, Music, 
   AlertCircle, Headphones, Shuffle, Upload, Download, Film,
-  Info, Sparkle, ExternalLink, CheckCircle2, Copy, Plus
+  Info, Sparkle, ExternalLink, CheckCircle2, Copy, Plus,
+  Trash2, FolderHeart
 } from 'lucide-react';
 import { SONG_DATA } from './data';
 import { Phrase, PhraseBreakdown, VocabTerm, SongData } from './types';
@@ -278,6 +279,44 @@ export default function App() {
     return SONG_DATA;
   });
 
+  const [savedSongs, setSavedSongs] = useState<SongData[]>(() => {
+    try {
+      const saved = localStorage.getItem('confieso_song_library');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.error("Failed to parse song library", e);
+    }
+    return [SONG_DATA];
+  });
+
+  // Auto-sync current active song into the savedSongs library
+  useEffect(() => {
+    setSavedSongs((prevLibrary) => {
+      const index = prevLibrary.findIndex(
+        (s) => s.title.toLowerCase().trim() === songData.title.toLowerCase().trim() &&
+               s.artist.toLowerCase().trim() === songData.artist.toLowerCase().trim()
+      );
+      if (index !== -1) {
+        if (JSON.stringify(prevLibrary[index]) !== JSON.stringify(songData)) {
+          const updated = [...prevLibrary];
+          updated[index] = songData;
+          localStorage.setItem('confieso_song_library', JSON.stringify(updated));
+          return updated;
+        }
+      } else {
+        const updated = [...prevLibrary, songData];
+        localStorage.setItem('confieso_song_library', JSON.stringify(updated));
+        return updated;
+      }
+      return prevLibrary;
+    });
+  }, [songData]);
+
   const [showSongManager, setShowSongManager] = useState<boolean>(false);
   const [songInputJson, setSongInputJson] = useState<string>('');
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -404,7 +443,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
     } catch (e) {
       console.error("Error reading from localStorage", e);
     }
-  }, [songData]);
+  }, [songData.title]);
 
   // Save Starred Progress to localStorage
   useEffect(() => {
@@ -426,6 +465,49 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
   });
 
   const activePhrase: Phrase | undefined = filteredPhrases[cardIndex];
+
+  // Keep card index synced to active card ID if the underlying array changes or reorders
+  const lastActiveIdRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (activePhrase) {
+      lastActiveIdRef.current = activePhrase.id;
+    }
+  }, [activePhrase]);
+
+  useEffect(() => {
+    if (lastActiveIdRef.current !== null) {
+      const newIndex = filteredPhrases.findIndex(p => p.id === lastActiveIdRef.current);
+      if (newIndex !== -1 && newIndex !== cardIndex) {
+        setCardIndex(newIndex);
+      }
+    }
+  }, [filteredPhrases]);
+
+  const quickJumpSections = useMemo(() => {
+    const seenCategories = new Set<string>();
+    const list: { label: string; sec: number }[] = [];
+    songData.phrases.forEach((phrase) => {
+      const cat = phrase.category || 'Verse';
+      if (!seenCategories.has(cat.toLowerCase())) {
+        seenCategories.add(cat.toLowerCase());
+        list.push({
+          label: `${cat} (${phrase.timestampStr})`,
+          sec: phrase.timestamp,
+        });
+      }
+    });
+    // Fallback if no distinct categories or list is too small
+    if (list.length < 3) {
+      list.length = 0;
+      songData.phrases.slice(0, 8).forEach((phrase) => {
+        list.push({
+          label: `${phrase.spanish.slice(0, 15)}... (${phrase.timestampStr})`,
+          sec: phrase.timestamp,
+        });
+      });
+    }
+    return list;
+  }, [songData.phrases]);
 
   // Clean index bounds when switching study decks
   useEffect(() => {
@@ -575,6 +657,40 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
     handleNextCard();
   };
 
+  const adjustActivePhraseTimestamp = (amount: number) => {
+    if (!activePhrase) return;
+    const currentId = activePhrase.id;
+    setSongData((prev) => {
+      const updatedPhrases = prev.phrases.map((p) => {
+        if (p.id === currentId) {
+          const newSec = Math.max(0, parseFloat((p.timestamp + amount).toFixed(2)));
+          const minutes = Math.floor(newSec / 60);
+          const seconds = Math.floor(newSec % 60);
+          const msFraction = Math.round((newSec % 1) * 10);
+          let newStr = `${minutes}:${String(seconds).padStart(2, '0')}`;
+          if (msFraction > 0) {
+            newStr += `.${msFraction}`;
+          }
+          return {
+            ...p,
+            timestamp: newSec,
+            timestampStr: newStr,
+          };
+        }
+        return p;
+      });
+
+      const sortedPhrases = [...updatedPhrases].sort((a, b) => a.timestamp - b.timestamp);
+      const updatedSong = {
+        ...prev,
+        phrases: sortedPhrases,
+      };
+
+      localStorage.setItem('confieso_custom_song', JSON.stringify(updatedSong));
+      return updatedSong;
+    });
+  };
+
   const handleQuizAnswer = (optionId: number) => {
     if (quizAnswered || !quizQuestion) return;
     setSelectedOption(optionId);
@@ -704,6 +820,128 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                   >
                     Load Demo Song
                   </button>
+                </div>
+              </div>
+
+              {/* SECTION: YOUR SAVED SONG LIBRARY */}
+              <div className="bg-slate-950/40 p-5 rounded-2xl border border-slate-850/80 space-y-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                  <div>
+                    <h4 className="text-xs font-bold text-teal-400 uppercase tracking-widest flex items-center gap-2">
+                      <FolderHeart className="w-4.5 h-4.5 text-pink-500" /> Your Saved Song Library
+                    </h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Toggle between different songs you have imported. Any changes or timestamp trims you make are saved automatically to your local browser storage.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSongInputJson(JSON.stringify({
+                        title: "New Song Title",
+                        artist: "Artist Name",
+                        youtubeId: "YOUTUBE_VIDEO_ID",
+                        phrases: [
+                          {
+                            id: 1,
+                            spanish: "Spanish phrase here",
+                            english: "English translation here",
+                            literal: "Literal breakdown here",
+                            category: "Intro / Verse 1 / Chorus",
+                            timestamp: 10,
+                            timestampStr: "0:10",
+                            breakdown: [
+                              { word: "SpanishWord", meaning: "EnglishMeaning" }
+                            ]
+                          }
+                        ],
+                        vocab: [
+                          {
+                            word: "SpanishWord",
+                            definition: "EnglishMeaning",
+                            example: "Spanish phrase here"
+                          }
+                        ]
+                      }, null, 2));
+                      setValidationError(null);
+                    }}
+                    className="bg-slate-900 hover:bg-slate-850 text-slate-350 font-bold text-[10px] sm:text-xs px-3 py-2 rounded-xl border border-slate-800 transition flex items-center gap-1.5 cursor-pointer self-stretch sm:self-auto justify-center"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-teal-400" /> Create New Blank Song
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                  {savedSongs.map((song) => {
+                    const isActive = song.title.toLowerCase().trim() === songData.title.toLowerCase().trim() &&
+                                     song.artist.toLowerCase().trim() === songData.artist.toLowerCase().trim();
+                    const isDefault = song.title === "Confieso" && song.artist === "Humbe";
+                    return (
+                      <div 
+                        key={`${song.title}-${song.artist}`}
+                        className={`p-4 rounded-xl border transition-all relative overflow-hidden flex flex-col justify-between h-32 ${
+                          isActive 
+                            ? 'bg-indigo-950/30 border-indigo-500/40 shadow-lg shadow-indigo-950/40' 
+                            : 'bg-slate-900/40 border-slate-850 hover:border-slate-750 hover:bg-slate-900/70'
+                        }`}
+                      >
+                        <div className="space-y-1">
+                          <div className="flex justify-between items-start gap-2">
+                            <span className="text-slate-200 font-bold text-xs sm:text-sm truncate block" title={song.title}>
+                              {song.title}
+                            </span>
+                            <span className="shrink-0 text-[10px] font-bold text-slate-400 font-mono bg-slate-950/60 px-1.5 py-0.5 rounded">
+                              {song.phrases.length} phrases
+                            </span>
+                          </div>
+                          <span className="text-xs text-slate-400 block truncate">{song.artist}</span>
+                        </div>
+
+                        <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-850/60">
+                          {isActive ? (
+                            <span className="text-[11px] font-extrabold text-teal-400 uppercase tracking-wider flex items-center gap-1">
+                              <CheckCircle2 className="w-3.5 h-3.5 animate-pulse" /> Current Song
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setSongData(song);
+                                localStorage.setItem('confieso_custom_song', JSON.stringify(song));
+                                setValidationError(null);
+                              }}
+                              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] sm:text-[11px] px-3 py-1 rounded-lg transition active:scale-95 flex items-center gap-1 cursor-pointer"
+                            >
+                              Load Song
+                            </button>
+                          )}
+
+                          {!isDefault && (
+                            <button
+                              onClick={() => {
+                                const confirmed = window.confirm(`Are you sure you want to delete "${song.title}" from your library?`);
+                                if (confirmed) {
+                                  setSavedSongs((prev) => {
+                                    const updated = prev.filter(
+                                      (s) => !(s.title === song.title && s.artist === song.artist)
+                                    );
+                                    localStorage.setItem('confieso_song_library', JSON.stringify(updated));
+                                    if (isActive) {
+                                      setSongData(SONG_DATA);
+                                      localStorage.setItem('confieso_custom_song', JSON.stringify(SONG_DATA));
+                                    }
+                                    return updated;
+                                  });
+                                }
+                              }}
+                              className="text-rose-400 hover:text-rose-350 p-1 rounded-lg hover:bg-rose-950/20 transition cursor-pointer"
+                              title="Delete from library"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1298,6 +1536,41 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                         </div>
                       </div>
 
+                    </div>
+                  </div>
+
+                  {/* TIMESTAMP ADJUSTER / TRIMMER */}
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-950/60 p-4 rounded-2xl border border-slate-900 text-xs">
+                    <div className="flex items-center gap-2">
+                      <Music className="w-4 h-4 text-indigo-400" />
+                      <span className="text-slate-300 font-medium">
+                        Current Card Timestamp: <strong className="text-indigo-300 font-mono text-sm">{activePhrase.timestampStr}</strong>
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                      <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Trim Sync:</span>
+                      <button
+                        id="trim-minus-btn-fc"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          adjustActivePhraseTimestamp(-0.5);
+                        }}
+                        className="flex-1 sm:flex-initial bg-slate-900 hover:bg-rose-950/30 border border-slate-800 hover:border-rose-900/60 text-rose-300 font-bold px-3 py-1.5 rounded-xl transition active:scale-95 flex items-center justify-center gap-1"
+                        title="Adjust sync -0.5s (earlier)"
+                      >
+                        -0.5s
+                      </button>
+                      <button
+                        id="trim-plus-btn-fc"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          adjustActivePhraseTimestamp(0.5);
+                        }}
+                        className="flex-1 sm:flex-initial bg-slate-900 hover:bg-emerald-950/30 border border-slate-800 hover:border-emerald-900/60 text-emerald-300 font-bold px-3 py-1.5 rounded-xl transition active:scale-95 flex items-center justify-center gap-1"
+                        title="Adjust sync +0.5s (later)"
+                      >
+                        +0.5s
+                      </button>
                     </div>
                   </div>
 
@@ -1941,7 +2214,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                   >
                     <Upload className="w-8 h-8 text-slate-500" />
                     <div>
-                      <p className="text-xs font-bold text-slate-350">Drag & Drop Humbe's video/audio file here</p>
+                      <p className="text-xs font-bold text-slate-350">Drag & Drop {songData.artist}'s video/audio file here</p>
                       <p className="text-[10px] text-slate-500 mt-1">or browse your system files</p>
                     </div>
                     <label className="bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 font-bold text-xs px-3 py-1.5 rounded-lg cursor-pointer transition">
@@ -1963,7 +2236,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                     <span>How offline local mode works:</span>
                   </div>
                   <p className="text-[11px] leading-relaxed">
-                    By downloading Humbe's song video/audio locally and uploading it here, you get lag-free exact seek accuracy. Your browser handles this completely locally; nothing uploaded leaves your machine.
+                    By downloading {songData.artist}'s song video/audio locally and uploading it here, you get lag-free exact seek accuracy. Your browser handles this completely locally; nothing uploaded leaves your machine.
                   </p>
                 </div>
 
@@ -1974,16 +2247,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
             <div className="space-y-2 pt-2 border-t border-slate-800">
               <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Quick Jump Sections:</span>
               <div className="grid grid-cols-2 gap-1.5">
-                {[
-                  { label: "Intro (Ojos miel)", sec: 11 },
-                  { label: "Te besé esa noche", sec: 18 },
-                  { word: "Y es que todo", sec: 28 },
-                  { label: "Ahora dime", sec: 38 },
-                  { label: "Necesito volver", sec: 45 },
-                  { label: "Confieso (Chorus)", sec: 101 },
-                  { label: "Para bien o mal", sec: 130 },
-                  { label: "Mira no vendo", sec: 144 },
-                ].map((sec, i) => (
+                {quickJumpSections.map((sec, i) => (
                   <button
                     key={i}
                     id={`quick-jump-sec-${i}`}
@@ -2006,9 +2270,17 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                 <span>ACTIVE LYRIC STUDY TIP:</span>
               </div>
               <p className="text-xs text-slate-300 leading-relaxed font-medium">
-                Observe how the singer states <strong className="text-teal-300">"volver a encontrarte"</strong> (Phrase #8). 
-                In Spanish, the grammar rule <strong className="text-indigo-300">volver a + [infinitive]</strong> means to repeat an action 
-                (i.e., "to find you again", rather than "to return to find you"). Practice this and use the confidence tags to master conversational structures!
+                Observe how the singer states <strong className="text-teal-300">"{activePhrase.spanish}"</strong> (Phrase #{activePhrase.id}). 
+                This translates to <strong className="text-indigo-300">"{activePhrase.english}"</strong>.
+                {activePhrase.breakdown && activePhrase.breakdown.length > 0 && (
+                  <span className="block mt-1">
+                    Key word breakdown: {activePhrase.breakdown.slice(0, 3).map((b, i) => (
+                      <span key={i}>
+                        <strong className="text-pink-400">"{b.word}"</strong> ({b.meaning}){i < Math.min(2, activePhrase.breakdown.length - 1) ? ', ' : ''}
+                      </span>
+                    ))}.
+                  </span>
+                )} Practice vocalizing this in sync with the song rhythm!
               </p>
             </div>
           )}
