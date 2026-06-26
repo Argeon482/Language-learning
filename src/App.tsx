@@ -539,6 +539,49 @@ export default function App() {
   }, [songData]);
 
   const [showSongManager, setShowSongManager] = useState<boolean>(false);
+  
+  // Sticky header and scroll details state
+  const [showHeaderDetails, setShowHeaderDetails] = useState<boolean>(true);
+  
+  // Trim controls visibility state
+  const [showTrimControls, setShowTrimControls] = useState<boolean>(() => {
+    const saved = localStorage.getItem('show_trim_controls');
+    return saved !== null ? saved === 'true' : true;
+  });
+
+  const toggleTrimControls = () => {
+    setShowTrimControls(prev => {
+      const newVal = !prev;
+      localStorage.setItem('show_trim_controls', String(newVal));
+      return newVal;
+    });
+  };
+
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+    
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      if (currentScrollY <= 15) {
+        // Always show details at the very top of the page
+        setShowHeaderDetails(true);
+      } else if (currentScrollY > lastScrollY && currentScrollY > 50) {
+        // Scrolling down past 50px - hide details for more space
+        setShowHeaderDetails(false);
+      } else if (currentScrollY < lastScrollY) {
+        // Scrolling up - show details when scrolled back up near the top
+        if (currentScrollY < 40) {
+          setShowHeaderDetails(true);
+        }
+      }
+      lastScrollY = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const [songInputJson, setSongInputJson] = useState<string>('');
   const [validationError, setValidationError] = useState<string | null>(null);
   const [validationSuccess, setValidationSuccess] = useState<boolean>(false);
@@ -972,48 +1015,60 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-teal-500 selection:text-slate-950">
       
       {/* HEADER SECTION */}
-      <header className="relative border-b border-slate-900 bg-[#020617]/80 px-4 py-4 sticky top-0 z-50 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-4">
+      <header className={`relative border-b border-slate-900 bg-[#020617]/85 px-4 sticky top-0 z-50 backdrop-blur-md transition-all duration-300 ${showHeaderDetails ? 'py-4' : 'py-2 sm:py-2.5'}`}>
+        <div className={`max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between transition-all duration-300 ${showHeaderDetails ? 'gap-4' : 'gap-1'}`}>
           
-          <div className="flex items-center gap-4 w-full lg:w-auto">
-            <div className="w-12 h-12 bg-teal-500/20 rounded-xl flex items-center justify-center border border-teal-500/30">
-              <Music className="w-6 h-6 text-teal-400" />
-            </div>
-            <div>
-              <h1 id="app-title" className="text-xl sm:text-2xl font-bold tracking-tight text-white">
-                {songData.title} <span className="text-slate-500 font-normal ml-2">• {songData.artist}</span>
-              </h1>
-              <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 mt-0.5">
-                <p className="text-xs text-teal-400/80 font-semibold tracking-wide uppercase">PHRASE STUDY COMPANION</p>
-                <span className="text-slate-800">•</span>
-                <button
-                  id="song-manager-toggle-btn"
-                  onClick={() => setShowSongManager(!showSongManager)}
-                  className="text-xs text-indigo-450 hover:text-indigo-300 font-bold underline decoration-dotted underline-offset-2 flex items-center gap-1 cursor-pointer transition-colors"
-                >
-                  <Music className="w-3 h-3" />
-                  <span>{t('change_import')}</span>
-                </button>
-                <span className="text-slate-800">•</span>
-                <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                  <Languages className="w-3.5 h-3.5 text-teal-400" />
-                  <select
-                    id="ui-lang-select"
-                    value={uiLang}
-                    onChange={(e) => setUiLang(e.target.value)}
-                    className="bg-slate-900 text-slate-300 text-[11px] font-bold border border-slate-800 rounded-lg px-2 py-0.5 cursor-pointer hover:border-slate-700 hover:text-white transition focus:outline-none focus:ring-1 focus:ring-teal-500/40"
-                  >
-                    <option value="en">English 🇬🇧</option>
-                    <option value="es">Español 🇪🇸</option>
-                    <option value="fr">Français 🇫🇷</option>
-                    <option value="de">Deutsch 🇩🇪</option>
-                    <option value="it">Italiano 🇮🇹</option>
-                    <option value="pt">Português 🇵🇹</option>
-                  </select>
+          <AnimatePresence initial={false}>
+            {showHeaderDetails && (
+              <motion.div
+                initial={{ height: 'auto', opacity: 1, marginBottom: 0 }}
+                animate={{ height: 'auto', opacity: 1, marginBottom: 0 }}
+                exit={{ height: 0, opacity: 0, marginBottom: -12 }}
+                transition={{ duration: 0.25, ease: 'easeInOut' }}
+                className="overflow-hidden w-full lg:w-auto"
+              >
+                <div className="flex items-center gap-4 w-full lg:w-auto pb-1">
+                  <div className="w-12 h-12 bg-teal-500/20 rounded-xl flex items-center justify-center border border-teal-500/30 flex-shrink-0">
+                    <Music className="w-6 h-6 text-teal-400" />
+                  </div>
+                  <div>
+                    <h1 id="app-title" className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+                      {songData.title} <span className="text-slate-500 font-normal ml-2">• {songData.artist}</span>
+                    </h1>
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 mt-0.5">
+                      <p className="text-xs text-teal-400/80 font-semibold tracking-wide uppercase">PHRASE STUDY COMPANION</p>
+                      <span className="text-slate-800">•</span>
+                      <button
+                        id="song-manager-toggle-btn"
+                        onClick={() => setShowSongManager(!showSongManager)}
+                        className="text-xs text-indigo-400 hover:text-indigo-300 font-bold underline decoration-dotted underline-offset-2 flex items-center gap-1 cursor-pointer transition-colors"
+                      >
+                        <Music className="w-3 h-3" />
+                        <span>{t('change_import')}</span>
+                      </button>
+                      <span className="text-slate-800">•</span>
+                      <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                        <Languages className="w-3.5 h-3.5 text-teal-400" />
+                        <select
+                          id="ui-lang-select"
+                          value={uiLang}
+                          onChange={(e) => setUiLang(e.target.value)}
+                          className="bg-slate-900 text-slate-300 text-[11px] font-bold border border-slate-800 rounded-lg px-2 py-0.5 cursor-pointer hover:border-slate-700 hover:text-white transition focus:outline-none focus:ring-1 focus:ring-teal-500/40"
+                        >
+                          <option value="en">English 🇬🇧</option>
+                          <option value="es">Español 🇪🇸</option>
+                          <option value="fr">Français 🇫🇷</option>
+                          <option value="de">Deutsch 🇩🇪</option>
+                          <option value="it">Italiano 🇮🇹</option>
+                          <option value="pt">Português 🇵🇹</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* MAIN TABS NAVIGATION */}
           <nav className="flex gap-1 bg-slate-900 p-1.5 rounded-2xl border border-slate-800 overflow-x-auto max-w-full">
@@ -1825,38 +1880,79 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                   </div>
 
                   {/* TIMESTAMP ADJUSTER / TRIMMER */}
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-950/60 p-4 rounded-2xl border border-slate-900 text-xs">
-                    <div className="flex items-center gap-2">
-                      <Music className="w-4 h-4 text-indigo-400" />
-                      <span className="text-slate-300 font-medium">
-                        {t('current_card_timestamp')} <strong className="text-indigo-300 font-mono text-sm">{activePhrase.timestampStr}</strong>
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                      <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">{t('trim_time')}:</span>
+                  <div className="bg-slate-900/60 p-3 sm:p-4 rounded-2xl border border-slate-900 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs transition-all duration-300">
+                    <div className="flex items-center justify-between w-full sm:w-auto gap-2">
+                      <div className="flex items-center gap-2">
+                        <Music className="w-4 h-4 text-indigo-400" />
+                        <span className="text-slate-300 font-medium">
+                          {t('current_card_timestamp')} <strong className="text-indigo-300 font-mono text-sm">{activePhrase.timestampStr}</strong>
+                        </span>
+                      </div>
+                      
+                      {/* Mobile-only toggle button */}
                       <button
-                        id="trim-minus-btn-fc"
+                        id="toggle-trim-controls-btn-mobile"
                         onClick={(e) => {
                           e.stopPropagation();
-                          adjustActivePhraseTimestamp(-0.5);
+                          toggleTrimControls();
                         }}
-                        className="flex-1 sm:flex-initial bg-slate-900 hover:bg-rose-950/30 border border-slate-800 hover:border-rose-900/60 text-rose-300 font-bold px-3 py-1.5 rounded-xl transition active:scale-95 flex items-center justify-center gap-1"
-                        title="Adjust sync -0.5s (earlier)"
+                        className="sm:hidden bg-slate-950 hover:bg-slate-800 border border-slate-850 hover:border-slate-700 text-slate-300 px-2.5 py-1.5 rounded-xl text-[10px] font-bold transition flex items-center gap-1 cursor-pointer"
                       >
-                        -0.5s
-                      </button>
-                      <button
-                        id="trim-plus-btn-fc"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          adjustActivePhraseTimestamp(0.5);
-                        }}
-                        className="flex-1 sm:flex-initial bg-slate-900 hover:bg-emerald-950/30 border border-slate-800 hover:border-emerald-900/60 text-emerald-300 font-bold px-3 py-1.5 rounded-xl transition active:scale-95 flex items-center justify-center gap-1"
-                        title="Adjust sync +0.5s (later)"
-                      >
-                        +0.5s
+                        <Settings className={`w-3 h-3 text-teal-400 transition-transform duration-300 ${showTrimControls ? 'rotate-45' : ''}`} />
+                        <span>{showTrimControls ? (uiLang === 'es' ? 'Ocultar' : uiLang === 'fr' ? 'Masquer' : uiLang === 'de' ? 'Ausblenden' : uiLang === 'it' ? 'Nascondi' : uiLang === 'pt' ? 'Ocultar' : 'Hide') : (uiLang === 'es' ? 'Ajustar' : uiLang === 'fr' ? 'Ajuster' : uiLang === 'de' ? 'Anpassen' : uiLang === 'it' ? 'Regola' : uiLang === 'pt' ? 'Ajustar' : 'Trim')}</span>
                       </button>
                     </div>
+
+                    {/* Desktop toggle button */}
+                    <div className="hidden sm:flex items-center gap-3">
+                      <button
+                        id="toggle-trim-controls-btn-desktop"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleTrimControls();
+                        }}
+                        className="bg-slate-950 hover:bg-slate-800 border border-slate-850 hover:border-slate-700 text-slate-300 px-3 py-1.5 rounded-xl text-[11px] font-bold transition flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Settings className={`w-3.5 h-3.5 text-teal-400 transition-transform duration-300 ${showTrimControls ? 'rotate-45' : ''}`} />
+                        <span>{showTrimControls ? (uiLang === 'es' ? 'Ocultar Ajustes' : uiLang === 'fr' ? 'Masquer l\'ajusteur' : uiLang === 'de' ? 'Ajuster ausblenden' : uiLang === 'it' ? 'Nascondi Sincro' : uiLang === 'pt' ? 'Ocultar Ajustes' : 'Hide Trim Tool') : (uiLang === 'es' ? 'Ajustar Sincronización' : uiLang === 'fr' ? 'Ajuster Synchronisation' : uiLang === 'de' ? 'Sync anpassen' : uiLang === 'it' ? 'Regola Sincro' : uiLang === 'pt' ? 'Ajustar Sincro' : 'Adjust Sync Trim')}</span>
+                      </button>
+                    </div>
+
+                    <AnimatePresence initial={false}>
+                      {showTrimControls && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, height: 'auto', scale: 1 }}
+                          exit={{ opacity: 0, height: 0, scale: 0.95 }}
+                          transition={{ duration: 0.2 }}
+                          className="flex items-center gap-2 w-full sm:w-auto justify-end sm:ml-auto border-t sm:border-t-0 border-slate-800/40 pt-2 sm:pt-0 overflow-hidden"
+                        >
+                          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">{t('trim_time')}:</span>
+                          <button
+                            id="trim-minus-btn-fc"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              adjustActivePhraseTimestamp(-0.5);
+                            }}
+                            className="flex-1 sm:flex-initial bg-slate-900 hover:bg-rose-950/30 border border-slate-800 hover:border-rose-900/60 text-rose-300 font-bold px-3 py-1.5 rounded-xl transition active:scale-95 flex items-center justify-center gap-1 text-xs"
+                            title="Adjust sync -0.5s (earlier)"
+                          >
+                            -0.5s
+                          </button>
+                          <button
+                            id="trim-plus-btn-fc"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              adjustActivePhraseTimestamp(0.5);
+                            }}
+                            className="flex-1 sm:flex-initial bg-slate-900 hover:bg-emerald-950/30 border border-slate-800 hover:border-emerald-900/60 text-emerald-300 font-bold px-3 py-1.5 rounded-xl transition active:scale-95 flex items-center justify-center gap-1 text-xs"
+                            title="Adjust sync +0.5s (later)"
+                          >
+                            +0.5s
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
                   {/* SPACED REPETITION CONFIDENCE TRACKER */}
