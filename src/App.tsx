@@ -5,10 +5,12 @@ import {
   HelpCircle, Keyboard, ArrowLeft, ArrowRight, Music, 
   AlertCircle, Headphones, Shuffle, Upload, Download, Film,
   Info, Sparkle, ExternalLink, CheckCircle2, Copy, Plus,
-  Trash2, FolderHeart, Languages, Settings
+  Trash2, FolderHeart, Languages, Settings, Users, Cloud, CloudOff, CloudLightning
 } from 'lucide-react';
 import { SONG_DATA } from './data';
 import { Phrase, PhraseBreakdown, VocabTerm, SongData } from './types';
+import { db, collection, onSnapshot, setDoc, doc, deleteDoc } from './firebase';
+
 
 // PROMPT TEMPLATES dictionary for seamless external generation
 const PROMPT_TEMPLATES = {
@@ -515,7 +517,148 @@ export default function App() {
     return [SONG_DATA];
   });
 
-  // Auto-sync current active song into the savedSongs library
+  // Cloud Sync state
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<'synced' | 'syncing' | 'error'>('synced');
+
+  // Cloud helper to save a song to Firestore
+  const saveSongToCloud = async (song: SongData) => {
+    try {
+      setCloudSyncStatus('syncing');
+      const songId = `${song.title.toLowerCase().trim().replace(/[^a-z0-9]/g, '_')}_${song.artist.toLowerCase().trim().replace(/[^a-z0-9]/g, '_')}`;
+      const songDocRef = doc(db, 'songs', songId);
+      
+      // Sanitize fields to ensure Firestore-compatible payload matching SongData and Phrase structure
+      const sanitizedPhrases = song.phrases.map(p => ({
+        id: p.id,
+        spanish: p.spanish || '',
+        english: p.english || '',
+        literal: p.literal || '',
+        category: p.category || '',
+        timestamp: p.timestamp || 0,
+        timestampStr: p.timestampStr || '',
+        breakdown: (p.breakdown || []).map(b => ({
+          word: b.word || '',
+          meaning: b.meaning || ''
+        }))
+      }));
+
+      const sanitizedVocab = (song.vocab || []).map(v => ({
+        word: v.word || '',
+        definition: v.definition || '',
+        example: v.example || ''
+      }));
+
+      await setDoc(songDocRef, {
+        title: song.title,
+        artist: song.artist,
+        youtubeId: song.youtubeId || '',
+        phrases: sanitizedPhrases,
+        vocab: sanitizedVocab,
+        updatedAt: new Date().toISOString(),
+        createdBy: studyRole === 'spanish-learner' ? 'Andrew' : 'Friend'
+      });
+      setCloudSyncStatus('synced');
+    } catch (e) {
+      console.error("Failed to save song to Firestore:", e);
+      setCloudSyncStatus('error');
+    }
+  };
+
+  // Cloud helper to save buddy study notes to Firestore
+  const saveNoteToCloud = async (phraseId: number, partnerA?: string, partnerB?: string) => {
+    try {
+      setCloudSyncStatus('syncing');
+      const noteId = `note_${phraseId}`;
+      const noteDocRef = doc(db, 'study_notes', noteId);
+      await setDoc(noteDocRef, {
+        phraseId,
+        partnerA: partnerA || '',
+        partnerB: partnerB || '',
+        updatedAt: new Date().toISOString()
+      });
+      setCloudSyncStatus('synced');
+    } catch (e) {
+      console.error("Failed to save notes to Firestore:", e);
+      setCloudSyncStatus('error');
+    }
+  };
+
+  // Cloud listener for Real-time Sync
+  useEffect(() => {
+    setCloudSyncStatus('syncing');
+    
+    // Subscribe to shared songs collection
+    const unsubSongs = onSnapshot(collection(db, 'songs'), (snapshot) => {
+      const cloudSongs: SongData[] = [];
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        cloudSongs.push({
+          title: data.title || '',
+          artist: data.artist || '',
+          youtubeId: data.youtubeId || '',
+          phrases: data.phrases || [],
+          vocab: data.vocab || []
+        });
+      });
+
+      if (cloudSongs.length > 0) {
+        setSavedSongs((prev) => {
+          const merged = [...prev];
+          cloudSongs.forEach((cloudSong) => {
+            const index = merged.findIndex(
+              (s) => s.title.toLowerCase().trim() === cloudSong.title.toLowerCase().trim() &&
+                     s.artist.toLowerCase().trim() === cloudSong.artist.toLowerCase().trim()
+            );
+            if (index !== -1) {
+              // Only overwrite if different to avoid redundant loops
+              if (JSON.stringify(merged[index]) !== JSON.stringify(cloudSong)) {
+                merged[index] = cloudSong;
+              }
+            } else {
+              merged.push(cloudSong);
+            }
+          });
+          localStorage.setItem('confieso_song_library', JSON.stringify(merged));
+          return merged;
+        });
+      }
+      setCloudSyncStatus('synced');
+    }, (error) => {
+      console.error("Firestore songs sync error:", error);
+      setCloudSyncStatus('error');
+    });
+
+    // Subscribe to shared study notes collection
+    const unsubNotes = onSnapshot(collection(db, 'study_notes'), (snapshot) => {
+      const cloudNotes: Record<number, { partnerA?: string; partnerB?: string }> = {};
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (data.phraseId !== undefined) {
+          cloudNotes[data.phraseId] = {
+            partnerA: data.partnerA || '',
+            partnerB: data.partnerB || ''
+          };
+        }
+      });
+
+      setBuddyNotes((prev) => {
+        const merged = { ...prev, ...cloudNotes };
+        localStorage.setItem('buddy_phrase_notes', JSON.stringify(merged));
+        return merged;
+      });
+      setCloudSyncStatus('synced');
+    }, (error) => {
+      console.error("Firestore study_notes sync error:", error);
+      setCloudSyncStatus('error');
+    });
+
+    return () => {
+      unsubSongs();
+      unsubNotes();
+    };
+  }, []);
+
+  // Auto-sync current active song into the savedSongs library & Firestore
   useEffect(() => {
     setSavedSongs((prevLibrary) => {
       const index = prevLibrary.findIndex(
@@ -527,11 +670,13 @@ export default function App() {
           const updated = [...prevLibrary];
           updated[index] = songData;
           localStorage.setItem('confieso_song_library', JSON.stringify(updated));
+          saveSongToCloud(songData);
           return updated;
         }
       } else {
         const updated = [...prevLibrary, songData];
         localStorage.setItem('confieso_song_library', JSON.stringify(updated));
+        saveSongToCloud(songData);
         return updated;
       }
       return prevLibrary;
@@ -539,6 +684,45 @@ export default function App() {
   }, [songData]);
 
   const [showSongManager, setShowSongManager] = useState<boolean>(false);
+  
+  // Buddy Language Swap and Cooperative Learning States
+  const [studyRole, setStudyRole] = useState<'spanish-learner' | 'english-learner'>(() => {
+    return (localStorage.getItem('buddy_study_role') as 'spanish-learner' | 'english-learner') || 'spanish-learner';
+  });
+
+  const [quizDuelMode, setQuizDuelMode] = useState<boolean>(() => {
+    return localStorage.getItem('buddy_quiz_duel_mode') === 'true';
+  });
+  const [quizDuelTurn, setQuizDuelTurn] = useState<'partner-a' | 'partner-b'>('partner-a');
+  const [quizDuelScoreA, setQuizDuelScoreA] = useState<number>(0);
+  const [quizDuelScoreB, setQuizDuelScoreB] = useState<number>(0);
+
+  const [buddyNotes, setBuddyNotes] = useState<Record<number, { partnerA?: string; partnerB?: string }>>(() => {
+    try {
+      const saved = localStorage.getItem('buddy_phrase_notes');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const saveBuddyNote = (phraseId: number, role: 'partnerA' | 'partnerB', note: string) => {
+    setBuddyNotes(prev => {
+      const currentEntry = prev[phraseId] || {};
+      const updatedNotes = {
+        ...currentEntry,
+        [role]: note
+      };
+      
+      const updated = {
+        ...prev,
+        [phraseId]: updatedNotes
+      };
+      localStorage.setItem('buddy_phrase_notes', JSON.stringify(updated));
+      saveNoteToCloud(phraseId, updatedNotes.partnerA, updatedNotes.partnerB);
+      return updated;
+    });
+  };
   
   // Sticky header and scroll details state
   const [showHeaderDetails, setShowHeaderDetails] = useState<boolean>(true);
@@ -802,15 +986,15 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
   }, [cardIndex, currentDeck, activeTab]);
 
   // Generate Quiz Question
-  const generateQuiz = () => {
+  const generateQuiz = (overrideTurn?: 'partner-a' | 'partner-b') => {
     const activePool = filteredPhrases.length > 0 ? filteredPhrases : songData.phrases;
     if (activePool.length === 0) return;
 
     const questionCard = activePool[Math.floor(Math.random() * activePool.length)];
-    setupQuizForCard(questionCard);
+    setupQuizForCard(questionCard, quizDuelMode, overrideTurn || quizDuelTurn);
   };
 
-  const setupQuizForCard = (card: Phrase) => {
+  const setupQuizForCard = (card: Phrase, isDuel?: boolean, duelTurn?: 'partner-a' | 'partner-b') => {
     setQuizQuestion(card);
     setQuizAnswered(false);
     setSelectedOption(null);
@@ -820,8 +1004,16 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
       .sort(() => 0.5 - Math.random())
       .slice(0, 3);
     
+    // Determine if options should be Spanish originals or English translations
+    const targetingEnglish = isDuel 
+      ? (duelTurn || quizDuelTurn) === 'partner-a' 
+      : studyRole === 'spanish-learner';
+
     const options = [card, ...distractors]
-      .map(p => ({ id: p.id, text: p.english }))
+      .map(p => ({ 
+        id: p.id, 
+        text: targetingEnglish ? p.english : p.spanish 
+      }))
       .sort(() => 0.5 - Math.random());
       
     setQuizOptions(options);
@@ -834,19 +1026,24 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
   }, [activeTab, currentDeck]);
 
   // Audio Playback Handler (Text to Speech browser voice)
-  const speakText = (text: string) => {
+  const speakText = (text: string, lang: 'es' | 'en' = 'es') => {
     if (isPlayingAudio) return;
     setIsPlayingAudio(true);
 
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'es-ES';
       
-      // Find a high quality Spanish voice
       const voices = window.speechSynthesis.getVoices();
-      const spanishVoice = voices.find(v => v.lang.startsWith('es') || v.lang.includes('ES'));
-      if (spanishVoice) utterance.voice = spanishVoice;
+      if (lang === 'en') {
+        utterance.lang = 'en-US';
+        const englishVoice = voices.find(v => v.lang.startsWith('en') || v.lang.includes('US'));
+        if (englishVoice) utterance.voice = englishVoice;
+      } else {
+        utterance.lang = 'es-ES';
+        const spanishVoice = voices.find(v => v.lang.startsWith('es') || v.lang.includes('ES'));
+        if (spanishVoice) utterance.voice = spanishVoice;
+      }
       
       utterance.rate = 0.82; // Slightly slowed down for better phonetic training
       utterance.onend = () => setIsPlayingAudio(false);
@@ -990,9 +1187,20 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
     if (quizAnswered || !quizQuestion) return;
     setSelectedOption(optionId);
     setQuizAnswered(true);
-    setQuizTotal(prev => prev + 1);
-    if (optionId === quizQuestion.id) {
-      setQuizScore(prev => prev + 1);
+
+    const isCorrect = optionId === quizQuestion.id;
+
+    if (quizDuelMode) {
+      if (quizDuelTurn === 'partner-a') {
+        if (isCorrect) setQuizDuelScoreA(prev => prev + 1);
+      } else {
+        if (isCorrect) setQuizDuelScoreB(prev => prev + 1);
+      }
+    } else {
+      setQuizTotal(prev => prev + 1);
+      if (isCorrect) {
+        setQuizScore(prev => prev + 1);
+      }
     }
   };
 
@@ -1655,6 +1863,76 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
         )}
       </AnimatePresence>
 
+      {/* BUDDY LANGUAGE SWAP CONTROL BAR */}
+      <div className="max-w-7xl w-full mx-auto px-4 pt-4 pb-0">
+        <div className="bg-gradient-to-r from-slate-900 via-indigo-950/20 to-slate-900 border border-slate-800/80 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-teal-500/10 text-teal-400 rounded-xl border border-teal-500/20">
+              <Users className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-slate-100 flex flex-wrap items-center gap-2">
+                <span>Cooperative Language Swap Hub</span>
+                <span className="text-[10px] text-teal-300 font-mono bg-teal-500/10 px-1.5 py-0.5 rounded border border-teal-500/20">2-PLAYER</span>
+                {cloudSyncStatus === 'synced' && (
+                  <span className="text-[10px] text-emerald-400 font-mono bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 flex items-center gap-1">
+                    <Cloud className="w-3 h-3 text-emerald-400" />
+                    <span>Cloud Synced</span>
+                  </span>
+                )}
+                {cloudSyncStatus === 'syncing' && (
+                  <span className="text-[10px] text-cyan-400 font-mono bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20 flex items-center gap-1 animate-pulse">
+                    <CloudLightning className="w-3 h-3 text-cyan-400 animate-bounce" />
+                    <span>Syncing...</span>
+                  </span>
+                )}
+                {cloudSyncStatus === 'error' && (
+                  <span className="text-[10px] text-rose-400 font-mono bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20 flex items-center gap-1">
+                    <CloudOff className="w-3 h-3 text-rose-400" />
+                    <span>Sync Offline</span>
+                  </span>
+                )}
+              </h4>
+              <p className="text-xs text-slate-400">Andrew is learning Spanish 🇪🇸 & Friend is learning English 🇺🇸. Tap roles below to toggle active interfaces!</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-slate-850/80">
+            <button
+              id="role-btn-spanish-learner"
+              onClick={() => {
+                setStudyRole('spanish-learner');
+                localStorage.setItem('buddy_study_role', 'spanish-learner');
+              }}
+              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+                studyRole === 'spanish-learner'
+                  ? 'bg-teal-500 text-slate-950 font-black shadow-lg shadow-teal-500/10'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
+              }`}
+            >
+              <span className="text-sm">🇺🇸</span>
+              <span>Andrew (Spanish Learner)</span>
+            </button>
+            
+            <button
+              id="role-btn-english-learner"
+              onClick={() => {
+                setStudyRole('english-learner');
+                localStorage.setItem('buddy_study_role', 'english-learner');
+              }}
+              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+                studyRole === 'english-learner'
+                  ? 'bg-indigo-600 text-white font-black shadow-lg shadow-indigo-600/20'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
+              }`}
+            >
+              <span className="text-sm">🇪🇸</span>
+              <span>Friend (English Learner)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* CORE GRID CONTENT LAYOUT */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
         
@@ -1748,14 +2026,15 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                       }}
                     >
                       
-                      {/* FRONT CARD (SPANISH TEXT) */}
+                      {/* FRONT CARD (DYNAMIC PROMPT BASED ON ROLE) */}
                       <div 
                         className="absolute inset-0 gradient-border glass-card p-6 sm:p-10 flex flex-col justify-between shadow-2xl overflow-hidden transition-all duration-300"
                         style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
                       >
                         <div className="flex justify-between items-start">
                           <span className="text-[10px] uppercase tracking-widest font-black text-teal-400 bg-teal-500/10 px-3 py-1 rounded-full border border-teal-500/30 flex items-center gap-1">
-                            <Sparkle className="w-3 h-3 text-teal-300" /> Spanish Phrase
+                            <Sparkle className="w-3 h-3 text-teal-300" /> 
+                            {studyRole === 'spanish-learner' ? 'Spanish Phrase' : 'English Prompt (For Friend)'}
                           </span>
                           <div className="flex items-center gap-1.5">
                             <button
@@ -1776,7 +2055,10 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                               id="audio-card-btn"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                speakText(activePhrase.spanish);
+                                speakText(
+                                  studyRole === 'spanish-learner' ? activePhrase.spanish : activePhrase.english,
+                                  studyRole === 'spanish-learner' ? 'es' : 'en'
+                                );
                               }}
                               className={`p-2 rounded-full border transition-all ${
                                 isPlayingAudio 
@@ -1792,13 +2074,13 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
 
                         <div className="text-center py-4 flex-1 flex flex-col justify-center">
                           <h2 className={`serif-display font-medium text-white mb-6 leading-relaxed italic px-2 transition-all ${
-                            activePhrase.spanish.length > 80 
+                            (studyRole === 'spanish-learner' ? activePhrase.spanish : activePhrase.english).length > 80 
                               ? 'text-lg sm:text-2xl' 
-                              : activePhrase.spanish.length > 50 
+                              : (studyRole === 'spanish-learner' ? activePhrase.spanish : activePhrase.english).length > 50 
                                 ? 'text-xl sm:text-3xl' 
                                 : 'text-2xl sm:text-4xl'
                           }`}>
-                            "{activePhrase.spanish}"
+                            "{studyRole === 'spanish-learner' ? activePhrase.spanish : activePhrase.english}"
                           </h2>
                           <div>
                             <span className="inline-block text-slate-500 text-[11px] uppercase tracking-widest font-semibold bg-slate-950/60 px-3 py-1 rounded-full border border-slate-900">
@@ -1823,7 +2105,7 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                         </div>
                       </div>
 
-                      {/* BACK CARD (ENGLISH & LITERAL TRANSLATION) */}
+                      {/* BACK CARD (ROLE SWAPPED EXPLANATION & SPEECH) */}
                       <div 
                         className="absolute inset-0 gradient-border glass-card p-6 sm:p-10 flex flex-col justify-between shadow-2xl overflow-hidden transition-all duration-300"
                         style={{ 
@@ -1834,33 +2116,53 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                       >
                         <div className="flex justify-between items-start">
                           <span className="text-[10px] uppercase tracking-wider font-extrabold text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/30">
-                            English Equivalent
+                            {studyRole === 'spanish-learner' ? 'English Equivalent' : 'Spanish Original (For Andrew)'}
                           </span>
-                          <button
-                            id="star-back-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleStar(activePhrase.id);
-                            }}
-                            className={`p-2 rounded-full transition-all ${
-                              starredIds.includes(activePhrase.id) 
-                                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30' 
-                                : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              id="star-back-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleStar(activePhrase.id);
+                              }}
+                              className={`p-2 rounded-full transition-all ${
+                                starredIds.includes(activePhrase.id) 
+                                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30' 
+                                  : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'
+                                }`}
+                            >
+                              <Star className="w-5 h-5 fill-current" />
+                            </button>
+                            <button
+                              id="audio-back-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                speakText(
+                                  studyRole === 'spanish-learner' ? activePhrase.english : activePhrase.spanish,
+                                  studyRole === 'spanish-learner' ? 'en' : 'es'
+                                );
+                              }}
+                              className={`p-2 rounded-full border transition-all ${
+                                isPlayingAudio 
+                                  ? 'bg-teal-500/20 text-teal-300 border-teal-500/40 animate-pulse' 
+                                  : 'bg-slate-950/80 text-slate-300 border-slate-800 hover:text-teal-400 hover:border-teal-500/30'
                               }`}
-                          >
-                            <Star className="w-5 h-5 fill-current" />
-                          </button>
+                              title="Listen Translation"
+                            >
+                              <Volume2 className="w-5 h-5" />
+                            </button>
+                          </div>
                         </div>
 
                         <div className="text-center py-2 space-y-4 flex-1 flex flex-col justify-center">
                           <p className={`text-teal-300 font-semibold uppercase tracking-tight leading-snug transition-all ${
-                            activePhrase.english.length > 80 
+                            (studyRole === 'spanish-learner' ? activePhrase.english : activePhrase.spanish).length > 80 
                               ? 'text-xs sm:text-sm' 
-                              : activePhrase.english.length > 50 
+                              : (studyRole === 'spanish-learner' ? activePhrase.english : activePhrase.spanish).length > 50 
                                 ? 'text-sm sm:text-lg' 
                                 : 'text-lg sm:text-xl'
                           }`}>
-                            "{activePhrase.english}"
+                            "{studyRole === 'spanish-learner' ? activePhrase.english : activePhrase.spanish}"
                           </p>
                           <div className="bg-slate-950/80 px-4 py-2.5 rounded-xl text-slate-400 italic max-w-md w-full mx-auto border border-slate-850 text-left">
                             <span className="block text-[9px] uppercase font-bold text-slate-500 tracking-widest mb-0.5">Literal Word-for-Word Equivalent</span>
@@ -1953,6 +2255,48 @@ Make sure to continue the sequential phrase IDs starting from ${startPhraseNum}:
                         </motion.div>
                       )}
                     </AnimatePresence>
+                  </div>
+
+                  {/* COOPERATIVE BUDDY STUDY NOTES */}
+                  <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
+                    <div className="flex items-center gap-2 text-xs font-bold text-slate-300 border-b border-slate-800 pb-2">
+                      <Users className="w-4 h-4 text-teal-400" />
+                      <span>Cooperative Buddy Study Notes</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                      {/* Andrew's Notes Area */}
+                      <div className="space-y-1.5 text-left">
+                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-teal-400 flex items-center gap-1.5">
+                          <span>🇺🇸 Andrew's Notes</span>
+                          {studyRole === 'spanish-learner' && <span className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-ping" />}
+                        </label>
+                        <textarea
+                          id="partner-a-notes"
+                          rows={3}
+                          value={buddyNotes[activePhrase.id]?.partnerA || ''}
+                          onChange={(e) => saveBuddyNote(activePhrase.id, 'partnerA', e.target.value)}
+                          placeholder="Andrew's notes on pronunciation, vocal inflections, or slang translation..."
+                          className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3 py-2 text-xs text-slate-200 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none leading-relaxed resize-none"
+                        />
+                      </div>
+
+                      {/* Friend's Notes Area */}
+                      <div className="space-y-1.5 text-left">
+                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                          <span>🇪🇸 Friend's Notes</span>
+                          {studyRole === 'english-learner' && <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-ping" />}
+                        </label>
+                        <textarea
+                          id="partner-b-notes"
+                          rows={3}
+                          value={buddyNotes[activePhrase.id]?.partnerB || ''}
+                          onChange={(e) => saveBuddyNote(activePhrase.id, 'partnerB', e.target.value)}
+                          placeholder="Friend's notes on English spelling, syntax, or vocabulary comparisons..."
+                          className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3 py-2 text-xs text-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none leading-relaxed resize-none"
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   {/* SPACED REPETITION CONFIDENCE TRACKER */}

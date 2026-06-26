@@ -1,0 +1,29 @@
+{
+  "collections": {
+    "songs": {
+      "description": "Shared songs created and used by Andrew and his study buddy",
+      "schema": {
+        "id": "string",
+        "title": "string",
+        "artist": "string",
+        "coverUrl": "string",
+        "vocalsUrl": "string",
+        "karaokeUrl": "string",
+        "videoUrl": "string",
+        "phrases": "array",
+        "vocabTerms": "array",
+        "updatedAt": "string",
+        "createdBy": "string"
+      }
+    },
+    "study_notes": {
+      "description": "Shared buddy notes synced for each phrase ID",
+      "schema": {
+        "phraseId": "number",
+        "partnerA": "string",
+        "partnerB": "string",
+        "updatedAt": "string"
+      }
+    }
+  }
+}
